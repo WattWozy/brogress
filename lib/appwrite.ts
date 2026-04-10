@@ -1,6 +1,6 @@
 'use client';
 
-import { Client, Databases, ID, Query } from 'appwrite';
+import { Client, Account, Databases, ID, Query } from 'appwrite';
 import {
   AW_ENDPOINT, AW_PROJECT_ID, AW_DB_ID,
   COL_WEIGHTS, COL_ROUTINE, COL_EXERCISES,
@@ -9,14 +9,42 @@ import type { Exercise } from '@/types';
 import { DEFAULT_EXERCISES } from './defaults';
 
 // ─── CLIENT ──────────────────────────────────────────────────────────────────
+let _client: Client | null = null;
 let _db: Databases | null = null;
+let _account: Account | null = null;
+
+function getClient(): Client {
+  if (!_client) {
+    _client = new Client().setEndpoint(AW_ENDPOINT).setProject(AW_PROJECT_ID);
+  }
+  return _client;
+}
 
 function getDb(): Databases {
-  if (!_db) {
-    const client = new Client().setEndpoint(AW_ENDPOINT).setProject(AW_PROJECT_ID);
-    _db = new Databases(client);
-  }
+  if (!_db) _db = new Databases(getClient());
   return _db;
+}
+
+function getAccount(): Account {
+  if (!_account) _account = new Account(getClient());
+  return _account;
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+export async function getUser() {
+  return getAccount().get();
+}
+
+export async function loginWithEmail(email: string, password: string) {
+  return getAccount().createEmailPasswordSession(email, password);
+}
+
+export async function registerWithEmail(email: string, password: string) {
+  return getAccount().create(ID.unique(), email, password);
+}
+
+export async function logoutUser() {
+  return getAccount().deleteSession('current');
 }
 
 // ─── OFFLINE WRITE QUEUE ─────────────────────────────────────────────────────
@@ -96,17 +124,18 @@ if (typeof window !== 'undefined') {
 }
 
 // ─── SEED ─────────────────────────────────────────────────────────────────────
-export async function seedAppwrite(deviceId: string) {
+export async function seedAppwrite(userId: string) {
   for (const e of DEFAULT_EXERCISES) {
-    await awWrite('create', COL_EXERCISES, e.id, {
+    await awWrite('upsert', COL_EXERCISES, `${userId}_${e.id}`, {
+      userId,
       name: e.name,
       defaultSets: e.sets,
       defaultReps: e.reps,
       defaultRestSeconds: 120,
     });
   }
-  await awWrite('upsert', COL_ROUTINE, 'routine_' + deviceId, {
-    deviceId,
+  await awWrite('upsert', COL_ROUTINE, `routine_${userId}`, {
+    userId,
     exerciseIds: DEFAULT_EXERCISES.map(e => e.id),
     sets: DEFAULT_EXERCISES.map(e => e.sets),
     reps: DEFAULT_EXERCISES.map(e => e.reps),
@@ -115,12 +144,12 @@ export async function seedAppwrite(deviceId: string) {
 
 // ─── WEIGHTS ─────────────────────────────────────────────────────────────────
 export async function loadWeightsFromAppwrite(
-  deviceId: string,
+  userId: string,
   routine: Exercise[],
 ): Promise<Exercise[]> {
   const docs = await awRead<{ exerciseId: string; currentWeight: number }>(
     COL_WEIGHTS,
-    [Query.equal('deviceId', deviceId)],
+    [Query.equal('userId', userId)],
   );
   if (!docs) return routine;
   const updated = routine.map(ex => {
@@ -130,17 +159,17 @@ export async function loadWeightsFromAppwrite(
   return updated;
 }
 
-export async function persistWeight(deviceId: string, exId: string, weight: number) {
-  await awWrite('upsert', COL_WEIGHTS, `w_${exId}_${deviceId}`, {
+export async function persistWeight(userId: string, exId: string, weight: number) {
+  await awWrite('upsert', COL_WEIGHTS, `w_${exId}_${userId}`, {
     exerciseId: exId,
-    deviceId,
+    userId,
     currentWeight: weight,
   });
 }
 
-export async function persistRoutine(deviceId: string, routine: Exercise[]) {
-  await awWrite('upsert', COL_ROUTINE, `routine_${deviceId}`, {
-    deviceId,
+export async function persistRoutine(userId: string, routine: Exercise[]) {
+  await awWrite('upsert', COL_ROUTINE, `routine_${userId}`, {
+    userId,
     exerciseIds: routine.map(e => e.id),
     sets: routine.map(e => e.sets),
     reps: routine.map(e => e.reps),

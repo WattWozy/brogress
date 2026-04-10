@@ -6,7 +6,8 @@ import React, {
 } from 'react';
 import type { Exercise, Feel, QueuedExercise } from '@/types';
 import { DEFAULT_EXERCISES } from '@/lib/defaults';
-import { saveRoutine, loadRoutine, saveWeight, getDeviceId } from '@/lib/storage';
+import { saveRoutine, loadRoutine, saveWeight } from '@/lib/storage';
+import { useAuth } from '@/context/AuthContext';
 import {
   seedAppwrite, loadWeightsFromAppwrite,
   persistWeight, persistRoutine,
@@ -215,12 +216,13 @@ interface WorkoutContextValue {
 const WorkoutContext = createContext<WorkoutContextValue | null>(null);
 
 export function WorkoutProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const sessionStartedRef = useRef(false);
 
   // ─── INIT ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const deviceId = getDeviceId();
+    const deviceId = user.$id;
     const stored = loadRoutine();
 
     if (stored && stored.length > 0) {
@@ -256,7 +258,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     sessionStartedRef.current = true;
     dispatch({ type: 'ADVANCE_SET' }); // will be undone below — just for side-effect
     awWrite('create', COL_SESSIONS, state.currentSessionId, {
-      deviceId: state.deviceId,
+      userId: state.deviceId,
       date: new Date().toISOString().slice(0, 10),
       startedAt: new Date().toISOString(),
     });
@@ -282,7 +284,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     if (!sessionStartedRef.current) {
       sessionStartedRef.current = true;
       awWrite('create', COL_SESSIONS, state.currentSessionId, {
-        deviceId: state.deviceId,
+        userId: state.deviceId,
         date: new Date().toISOString().slice(0, 10),
         startedAt: new Date().toISOString(),
       });
