@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { EXERCISE_LIBRARY } from '@/lib/defaults';
 import { useWorkout } from '@/context/WorkoutContext';
 import type { Exercise } from '@/types';
-import { awWrite } from '@/lib/appwrite';
-import { COL_EXERCISES } from '@/lib/config';
+import { exerciseId } from '@/lib/appwrite';
 
 interface ExerciseSearchProps {
   visible: boolean;
@@ -14,7 +13,7 @@ interface ExerciseSearchProps {
 }
 
 export function ExerciseSearch({ visible, onClose, onAdded }: ExerciseSearchProps) {
-  const { addExercise } = useWorkout();
+  const { addExercise, state } = useWorkout();
   const [query, setQuery] = useState('');
 
   const filtered = query
@@ -25,12 +24,8 @@ export function ExerciseSearch({ visible, onClose, onAdded }: ExerciseSearchProp
     !EXERCISE_LIBRARY.some(n => n.toLowerCase() === query.toLowerCase());
 
   function handleAdd(name: string) {
-    const id = 'ex_custom_' + name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
-    const ex: Exercise = { id, name, sets: 3, reps: 10, weight: 20 };
+    const ex: Exercise = { id: exerciseId(name), name, sets: 3, reps: 10, weight: 20 };
     addExercise(ex);
-    awWrite('create', COL_EXERCISES, id, {
-      name, defaultSets: 3, defaultReps: 10, defaultRestSeconds: 90,
-    });
     setQuery('');
     onClose();
     onAdded(name);

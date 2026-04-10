@@ -3,31 +3,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CalendarStrip } from './CalendarStrip';
 import { SessionView } from './SessionView';
-import { awRead } from '@/lib/appwrite';
-import { COL_SESSIONS, COL_SETS } from '@/lib/config';
-import { getDeviceId } from '@/lib/storage';
-import { Query } from 'appwrite';
+import { loadSessionDates, loadSessionSets } from '@/lib/appwrite';
 import type { HistoryDate, HistoryEntry, SessionSet } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 export function HistoryPanel() {
+  const { user } = useAuth();
   const [historyDates, setHistoryDates] = useState<HistoryDate[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [entries, setEntries] = useState<HistoryEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function fetchDates() {
-      const deviceId = getDeviceId();
-      const sessions = await awRead<{ $id: string; date: string }>(COL_SESSIONS, [
-        Query.equal('deviceId', deviceId),
-        Query.orderDesc('date'),
-        Query.limit(60),
-      ]);
-      if (sessions) {
-        setHistoryDates(sessions.map(s => ({ date: s.date, sessionId: s.$id })));
-      }
-    }
-    fetchDates();
+    loadSessionDates(user.$id).then(setHistoryDates);
   }, []);
 
   const handleSelectDate = useCallback(async (date: string) => {
@@ -35,41 +23,33 @@ export function HistoryPanel() {
     setLoading(true);
     setEntries(null);
 
-    const deviceId = getDeviceId();
-    const sessions = await awRead<{ $id: string; date: string }>(COL_SESSIONS, [
-      Query.equal('deviceId', deviceId),
-      Query.equal('date', date),
-    ]);
+    const match = historyDates.find(d => d.date === date);
 
-    if (!sessions || sessions.length === 0) {
+    if (!match) {
       setEntries([]);
       setLoading(false);
       return;
     }
 
-    const session = sessions[0];
-    const sets = await awRead<SessionSet>(COL_SETS, [
-      Query.equal('sessionId', session.$id),
-      Query.orderAsc('setNumber'),
-    ]);
+    const sets = await loadSessionSets(match.sessionId);
 
-    if (!sets || sets.length === 0) {
+    if (sets.length === 0) {
       setEntries([]);
       setLoading(false);
       return;
     }
 
-    // Group by exercise
+    // Group by exercise name
     const byEx: Record<string, HistoryEntry> = {};
     sets.forEach(s => {
-      if (!byEx[s.exerciseId]) byEx[s.exerciseId] = { name: s.exerciseName, sets: [], feel: '' };
-      byEx[s.exerciseId].sets.push(s);
-      if (s.feel) byEx[s.exerciseId].feel = s.feel;
+      if (!byEx[s.exerciseName]) byEx[s.exerciseName] = { name: s.exerciseName, sets: [], feel: '' };
+      byEx[s.exerciseName].sets.push(s);
+      if (s.feel) byEx[s.exerciseName].feel = s.feel;
     });
 
     setEntries(Object.values(byEx));
     setLoading(false);
-  }, []);
+  }, [historyDates]);
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

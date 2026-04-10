@@ -1,7 +1,7 @@
 export type Feel = 'easy' | 'right' | 'hard';
 
 export interface Exercise {
-  id: string;
+  id: string;      // local only — derived from name, never sent to Appwrite
   name: string;
   sets: number;
   reps: number;
@@ -9,13 +9,13 @@ export interface Exercise {
 }
 
 export interface QueuedExercise extends Exercise {
-  /** original routine index, for re-insertion */
   originalIdx?: number;
 }
 
-export interface SessionSet extends Record<string, unknown> {
+export interface SessionSet {
+  $id: string;
   sessionId: string;
-  exerciseId: string;
+  userId: string;
   exerciseName: string;
   setNumber: number;
   reps: number;
@@ -23,20 +23,13 @@ export interface SessionSet extends Record<string, unknown> {
   feel?: Feel | '';
 }
 
-export interface Session {
-  $id: string;
-  deviceId: string;
+export interface HistoryDate {
   date: string;
-  startedAt: string;
+  sessionId: string;
 }
 
 export interface HistoryEntry {
   name: string;
   sets: SessionSet[];
   feel: Feel | '';
-}
-
-export interface HistoryDate {
-  date: string;
-  sessionId: string;
 }

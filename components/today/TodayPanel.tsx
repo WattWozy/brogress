@@ -14,7 +14,7 @@ interface TodayPanelProps {
 }
 
 export function TodayPanel({ onShowToast }: TodayPanelProps) {
-  const { state, dispatch, handleDone, handleSkip, isWorkoutComplete } = useWorkout();
+  const { state, dispatch, handleDone, handleSkip, handleSetFeel, isWorkoutComplete } = useWorkout();
   const [showFeel, setShowFeel] = useState(false);
   const [doneBtnFlash, setDoneBtnFlash] = useState(false);
   const prevSetRef = useRef(state.currentSet);
@@ -51,7 +51,7 @@ export function TodayPanel({ onShowToast }: TodayPanelProps) {
 
   const onFeelSelect = useCallback((feel: Feel) => {
     if (!currentEx) return;
-    dispatch({ type: 'SET_FEEL', exerciseId: currentEx.id, feel });
+    handleSetFeel(feel);
     setShowFeel(false);
 
     // Advance to next exercise

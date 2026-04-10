@@ -1,7 +1,6 @@
 'use client';
 
 import type { HistoryEntry } from '@/types';
-import { loadWeight } from '@/lib/storage';
 
 interface SessionViewProps {
   date: string | null;
@@ -45,8 +44,6 @@ export function SessionView({ date, entries, loading }: SessionViewProps) {
         const maxWeight = Math.max(...entry.sets.map(s => s.weight));
         const reps = entry.sets[0]?.reps ?? 0;
         const setCount = entry.sets.length;
-        const stored = loadWeight(entry.sets[0]?.exerciseId ?? '');
-        const isPR = stored !== null && maxWeight >= stored;
 
         return (
           <div
@@ -74,9 +71,6 @@ export function SessionView({ date, entries, loading }: SessionViewProps) {
             }}>
               {maxWeight}kg × {reps} × {setCount}
             </div>
-            {isPR && (
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f5a623', flexShrink: 0 }} title="PR" />
-            )}
             {entry.feel && (
               <div style={{ fontSize: 14, flexShrink: 0 }}>{feelEmoji(entry.feel)}</div>
             )}
