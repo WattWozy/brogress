@@ -66,7 +66,7 @@ export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
           cursor: 'pointer',
         }}
       >
-        New Session
+        Next Session
       </button>
     </div>
   );
