@@ -174,6 +174,37 @@ export async function updateSetsFeel(sessionId: string, exerciseName: string, fe
 
 // ─── HISTORY ──────────────────────────────────────────────────────────────────
 
+// Returns the Appwrite $id of the user's most recent session, or null.
+// Used as a cheap cache-validity key — one document, no set data.
+export async function loadLatestSessionId(userId: string): Promise<string | null> {
+  try {
+    const res = await getDb().listDocuments(AW_DB_ID, COL_SESSIONS, [
+      Query.equal('userId', userId),
+      Query.orderDesc('$createdAt'),
+      Query.limit(1),
+    ]);
+    return (res.documents[0]?.$id as string) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Fetches sets directly by userId (uses idx_userId_createdAt), bypassing the
+// sessions → sets N+1 pattern.  Default limit covers ~10 typical sessions.
+export async function loadRecentSets(userId: string, limit = 300): Promise<SessionSet[]> {
+  try {
+    const res = await getDb().listDocuments(AW_DB_ID, COL_SETS, [
+      Query.equal('userId', userId),
+      Query.orderDesc('$createdAt'),
+      Query.limit(limit),
+    ]);
+    return res.documents as unknown as SessionSet[];
+  } catch (e) {
+    console.warn('loadRecentSets failed:', e);
+    return [];
+  }
+}
+
 export async function loadSessionDates(userId: string): Promise<{ sessionId: string; date: string }[]> {
   try {
     const res = await getDb().listDocuments(AW_DB_ID, COL_SESSIONS, [

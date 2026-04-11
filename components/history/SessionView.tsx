@@ -1,11 +1,12 @@
 'use client';
 
-import type { HistoryEntry } from '@/types';
+import type { DeltaMap, HistoryEntry } from '@/types';
 
 interface SessionViewProps {
   date: string | null;
   entries: HistoryEntry[] | null;
   loading: boolean;
+  deltas?: DeltaMap | null;
 }
 
 function feelEmoji(feel: string) {
@@ -15,7 +16,7 @@ function feelEmoji(feel: string) {
   return '';
 }
 
-export function SessionView({ date, entries, loading }: SessionViewProps) {
+export function SessionView({ date, entries, loading, deltas }: SessionViewProps) {
   if (!date) {
     return (
       <div style={{ padding: '40px 0', textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#444', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -45,6 +46,12 @@ export function SessionView({ date, entries, loading }: SessionViewProps) {
         const reps = entry.sets[0]?.reps ?? 0;
         const setCount = entry.sets.length;
 
+        const d = deltas?.[entry.name];
+        const deltaLabel = d
+          ? d.delta > 0 ? `+${d.delta}` : d.delta < 0 ? `${d.delta}` : null
+          : null;
+        const deltaColor = d && d.delta > 0 ? '#4caf82' : '#e07b54';
+
         return (
           <div
             key={i}
@@ -71,6 +78,15 @@ export function SessionView({ date, entries, loading }: SessionViewProps) {
             }}>
               {maxWeight}kg × {reps} × {setCount}
             </div>
+            {deltaLabel && (
+              <div style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 10, color: deltaColor,
+                letterSpacing: '0.06em', flexShrink: 0,
+              }}>
+                {deltaLabel}kg
+              </div>
+            )}
             {entry.feel && (
               <div style={{ fontSize: 14, flexShrink: 0 }}>{feelEmoji(entry.feel)}</div>
             )}

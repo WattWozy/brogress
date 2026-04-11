@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CalendarStrip } from './CalendarStrip';
 import { SessionView } from './SessionView';
 import { loadSessionDates, loadSessionSets } from '@/lib/appwrite';
+import { useDeltas } from '@/hooks/useDeltas';
 import type { HistoryDate, HistoryEntry, SessionSet } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -13,6 +14,7 @@ export function HistoryPanel() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [entries, setEntries] = useState<HistoryEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const { deltas } = useDeltas();
 
   useEffect(() => {
     loadSessionDates(user.$id).then(setHistoryDates);
@@ -78,7 +80,7 @@ export function HistoryPanel() {
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
-        <SessionView date={selectedDate} entries={entries} loading={loading} />
+        <SessionView date={selectedDate} entries={entries} loading={loading} deltas={deltas} />
       </div>
     </div>
   );

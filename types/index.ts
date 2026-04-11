@@ -20,6 +20,7 @@ export interface QueuedExercise extends Exercise {
 
 export interface SessionSet {
   $id: string;
+  $createdAt?: string;
   sessionId: string;
   userId: string;
   exerciseName: string;
@@ -28,6 +29,14 @@ export interface SessionSet {
   weight: number;
   feel?: Feel | '';
 }
+
+export interface ExerciseDelta {
+  currentWeight: number;  // max weight across sets in the most recent session
+  prevWeight: number;     // max weight across sets in the prior session
+  delta: number;          // currentWeight - prevWeight
+}
+
+export type DeltaMap = Record<string, ExerciseDelta>; // keyed by exerciseName
 
 export interface HistoryDate {
   date: string;
