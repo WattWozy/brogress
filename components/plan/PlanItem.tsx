@@ -1,79 +1,63 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
 import type { Exercise } from '@/types';
 
 interface PlanItemProps {
   ex: Exercise;
   idx: number;
+  total: number;
   onDelete: (idx: number) => void;
-  dragHandleProps: {
-    draggable: boolean;
-    onDragStart: (e: React.DragEvent) => void;
-  };
-  isDragOver: boolean;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent) => void;
-  onDragEnd: () => void;
+  onMoveUp: (idx: number) => void;
+  onMoveDown: (idx: number) => void;
 }
 
-export function PlanItem({
-  ex, idx, onDelete,
-  dragHandleProps, isDragOver, onDragOver, onDrop, onDragEnd,
-}: PlanItemProps) {
+export function PlanItem({ ex, idx, total, onDelete, onMoveUp, onMoveDown }: PlanItemProps) {
   const { updateRoutineExercise } = useWorkout();
   const [open, setOpen] = useState(false);
-  const [shake, setShake] = useState(false);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleLongPress() {
-    setShake(true);
-    setTimeout(() => {
-      setShake(false);
-      if (window.confirm(`Remove ${ex.name}?`)) {
-        onDelete(idx);
-      }
-    }, 400);
-  }
-
-  function onPointerDown() {
-    longPressTimer.current = setTimeout(handleLongPress, 600);
-  }
-  function onPointerUp() {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-  }
 
   return (
     <div
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
       style={{
-        borderBottom: `1px solid ${isDragOver ? '#f5a623' : '#2a2a2a'}`,
-        borderTop: isDragOver ? '2px solid #f5a623' : 'none',
+        borderBottom: '1px solid #2a2a2a',
         padding: '18px 0',
         position: 'relative',
-        animation: shake ? 'shake 0.4s ease-out' : 'none',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {/* Drag handle */}
-        <div
-          {...dragHandleProps}
-          style={{
-            color: '#444',
-            fontSize: 18,
-            cursor: 'grab',
-            padding: '4px 8px 4px 0',
-            flexShrink: 0,
-            userSelect: 'none',
-          }}
-        >
-          ⠿
+        {/* Up/Down arrows */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+          <button
+            onClick={() => onMoveUp(idx)}
+            disabled={idx === 0}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: idx === 0 ? '#333' : '#666',
+              fontSize: 14,
+              cursor: idx === 0 ? 'default' : 'pointer',
+              padding: '2px 6px',
+              lineHeight: 1,
+            }}
+          >
+            ▲
+          </button>
+          <button
+            onClick={() => onMoveDown(idx)}
+            disabled={idx === total - 1}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: idx === total - 1 ? '#333' : '#666',
+              fontSize: 14,
+              cursor: idx === total - 1 ? 'default' : 'pointer',
+              padding: '2px 6px',
+              lineHeight: 1,
+            }}
+          >
+            ▼
+          </button>
         </div>
 
         {/* Info */}
@@ -100,6 +84,27 @@ export function PlanItem({
             {ex.sets} × {ex.reps} &nbsp;·&nbsp; {ex.weight} kg
           </div>
         </div>
+
+        {/* Delete button */}
+        <button
+          onClick={() => onDelete(idx)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#555',
+            fontSize: 18,
+            cursor: 'pointer',
+            padding: '4px 8px',
+            flexShrink: 0,
+            lineHeight: 1,
+            transition: 'color 0.12s',
+          }}
+          onPointerDown={e => (e.currentTarget.style.color = '#e05555')}
+          onPointerUp={e => (e.currentTarget.style.color = '#555')}
+          onPointerLeave={e => (e.currentTarget.style.color = '#555')}
+        >
+          ✕
+        </button>
       </div>
 
       {/* Inline editor */}
@@ -140,15 +145,6 @@ export function PlanItem({
               />
             </div>
           ))}
-          <div style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: 9, color: '#444',
-            letterSpacing: '0.08em',
-            paddingTop: 8, width: '100%',
-            textTransform: 'uppercase',
-          }}>
-            Long press to remove
-          </div>
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
 import { PlanItem } from './PlanItem';
 import { ExerciseSearch } from './ExerciseSearch';
@@ -14,28 +14,6 @@ export function PlanPanel({ onShowToast }: PlanPanelProps) {
   const { state, removeExercise, reorderRoutine, activeTemplateName } = useWorkout();
   const [searchOpen, setSearchOpen] = useState(false);
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
-  const dragSrcIdx = useRef<number | null>(null);
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
-
-  function handleDragStart(idx: number) {
-    dragSrcIdx.current = idx;
-  }
-  function handleDragOver(e: React.DragEvent, idx: number) {
-    e.preventDefault();
-    setDragOverIdx(idx);
-  }
-  function handleDrop(e: React.DragEvent, toIdx: number) {
-    e.preventDefault();
-    if (dragSrcIdx.current !== null && dragSrcIdx.current !== toIdx) {
-      reorderRoutine(dragSrcIdx.current, toIdx);
-    }
-    dragSrcIdx.current = null;
-    setDragOverIdx(null);
-  }
-  function handleDragEnd() {
-    dragSrcIdx.current = null;
-    setDragOverIdx(null);
-  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -87,15 +65,10 @@ export function PlanPanel({ onShowToast }: PlanPanelProps) {
             key={ex.id}
             ex={ex}
             idx={idx}
+            total={state.routine.length}
             onDelete={i => { removeExercise(i); onShowToast(`${ex.name} removed`); }}
-            dragHandleProps={{
-              draggable: true,
-              onDragStart: () => handleDragStart(idx),
-            }}
-            isDragOver={dragOverIdx === idx}
-            onDragOver={e => handleDragOver(e, idx)}
-            onDrop={e => handleDrop(e, idx)}
-            onDragEnd={handleDragEnd}
+            onMoveUp={i => reorderRoutine(i, i - 1)}
+            onMoveDown={i => reorderRoutine(i, i + 1)}
           />
         ))}
 

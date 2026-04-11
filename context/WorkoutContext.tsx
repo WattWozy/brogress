@@ -65,8 +65,13 @@ function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
       };
     }
 
-    case 'SET_ROUTINE':
+    case 'SET_ROUTINE': {
+      if (state.completedSets === 0 && state.skipped.length === 0) {
+        const queue = buildQueue(action.routine);
+        return { ...state, routine: action.routine, queue, totalSets: totalSetsOf(queue) };
+      }
       return { ...state, routine: action.routine };
+    }
 
     case 'ADVANCE_SET':
       return { ...state, currentSet: state.currentSet + 1, completedSets: state.completedSets + 1 };
