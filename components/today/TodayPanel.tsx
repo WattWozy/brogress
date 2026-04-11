@@ -14,23 +14,13 @@ interface TodayPanelProps {
 }
 
 export function TodayPanel({ onShowToast }: TodayPanelProps) {
-  const { state, dispatch, handleDone, handleSkip, handleSetFeel, isWorkoutComplete } = useWorkout();
+  const { state, dispatch, handleDone, handleSkip, handleSetFeel, isWorkoutComplete, isLastSetOfExercise } = useWorkout();
   const [showFeel, setShowFeel] = useState(false);
   const [doneBtnFlash, setDoneBtnFlash] = useState(false);
-  const prevSetRef = useRef(state.currentSet);
   const prevExIdRef = useRef(state.queue[state.currentExIdx]?.id);
 
   const currentEx = state.queue[state.currentExIdx];
   const currentFeel = currentEx ? (state.sessionFeel[currentEx.id] ?? null) as Feel | null : null;
-
-  // Detect when we've hit the last set (currentSet > ex.sets) to show feel overlay
-  useEffect(() => {
-    if (!currentEx) return;
-    if (state.currentSet > currentEx.sets && prevExIdRef.current === currentEx.id) {
-      setShowFeel(true);
-    }
-    prevSetRef.current = state.currentSet;
-  }, [state.currentSet, currentEx]);
 
   // Track exercise changes
   useEffect(() => {
@@ -39,9 +29,14 @@ export function TodayPanel({ onShowToast }: TodayPanelProps) {
 
   const onDone = useCallback(() => {
     setDoneBtnFlash(true);
-    handleDone();
     setTimeout(() => setDoneBtnFlash(false), 400);
-  }, [handleDone]);
+    if (isLastSetOfExercise) {
+      // Show feel overlay first — progress bar will advance only after feel is picked
+      setShowFeel(true);
+    } else {
+      handleDone();
+    }
+  }, [handleDone, isLastSetOfExercise]);
 
   const onSkip = useCallback(() => {
     if (!currentEx) return;
@@ -51,23 +46,11 @@ export function TodayPanel({ onShowToast }: TodayPanelProps) {
 
   const onFeelSelect = useCallback((feel: Feel) => {
     if (!currentEx) return;
-    handleSetFeel(feel);
+    handleDone();                        // save set to DB + advance progress bar
+    handleSetFeel(feel);                 // record feel
     setShowFeel(false);
-
-    // Advance to next exercise
-    const nextIdx = state.currentExIdx + 1;
-    if (nextIdx >= state.queue.length && state.skipped.length === 0) {
-      // workout complete — handled via isWorkoutComplete
-      dispatch({ type: 'ADVANCE_EXERCISE' });
-    } else if (nextIdx >= state.queue.length && state.skipped.length > 0) {
-      // re-inject skipped
-      const newQueue = [...state.queue, ...state.skipped];
-      // Simple: push all skipped back, clear skipped
-      dispatch({ type: 'ADVANCE_EXERCISE' });
-    } else {
-      dispatch({ type: 'ADVANCE_EXERCISE' });
-    }
-  }, [currentEx, dispatch, state.currentExIdx, state.queue.length, state.skipped.length]);
+    dispatch({ type: 'ADVANCE_EXERCISE' });
+  }, [currentEx, handleDone, handleSetFeel, dispatch]);
 
   const onReinject = useCallback((idx: number) => {
     const name = state.skipped[idx]?.name;

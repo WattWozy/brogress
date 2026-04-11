@@ -158,6 +158,7 @@ interface WorkoutContextValue {
   reorderRoutine: (from: number, to: number) => void;
   resetSession: () => void;
   isWorkoutComplete: boolean;
+  isLastSetOfExercise: boolean;
 }
 
 const WorkoutContext = createContext<WorkoutContextValue | null>(null);
@@ -307,6 +308,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       updateRoutineExercise, addExercise, removeExercise, reorderRoutine,
       resetSession,
       isWorkoutComplete,
+      isLastSetOfExercise,
     }}>
       {children}
     </WorkoutContext.Provider>
