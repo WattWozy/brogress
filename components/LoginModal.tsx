@@ -53,9 +53,10 @@ export function LoginModal({ onLogin, onRegister }: Props) {
           }}>
             BROGRESS
           </div>
-          <div style={{ color: '#555', fontSize: 13 }}>
-            {mode === 'login' ? 'sign in to continue' : 'create an account'}
+          <div style={{ color: '#444', fontSize: 11, letterSpacing: '0.04em', marginBottom: 12 }}>
+            No bloat. No distraction. Just brogress.
           </div>
+
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
