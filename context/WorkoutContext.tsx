@@ -2,15 +2,15 @@
 
 import React, {
   createContext, useContext, useReducer, useCallback,
-  useEffect, useRef, type Dispatch,
+  useEffect, useRef, useState, type Dispatch,
 } from 'react';
-import type { Exercise, Feel, QueuedExercise } from '@/types';
+import type { Exercise, Feel, QueuedExercise, WorkoutTemplate } from '@/types';
 import { DEFAULT_EXERCISES } from '@/lib/defaults';
 import { saveRoutine, loadRoutine } from '@/lib/storage';
 import { useAuth } from '@/context/AuthContext';
 import {
-  loadTemplate, saveTemplate, createSession, completeSession,
-  saveSet, updateSetsFeel, exerciseId,
+  loadAllTemplates, saveTemplate, deleteTemplate as deleteTemplateDoc,
+  createSession, completeSession, saveSet, updateSetsFeel, exerciseId,
 } from '@/lib/appwrite';
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
@@ -159,6 +159,14 @@ interface WorkoutContextValue {
   resetSession: () => void;
   isWorkoutComplete: boolean;
   isLastSetOfExercise: boolean;
+  // ─── Templates ───
+  templates: WorkoutTemplate[];
+  activeTemplateId: string | null;
+  activeTemplateName: string;
+  selectTemplate: (id: string) => void;
+  saveAsNewTemplate: (name: string) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
+  renameTemplate: (id: string, name: string) => Promise<void>;
 }
 
 const WorkoutContext = createContext<WorkoutContextValue | null>(null);
@@ -174,6 +182,26 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   // Debounce template saves so rapid weight adjustments don't hammer Appwrite.
   const templateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ─── TEMPLATES ─────────────────────────────────────────────────────
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  const [activeTemplateId, setActiveTemplateIdState] = useState<string | null>(null);
+
+  // Refs mirror state so closure-captured callbacks always see the latest value.
+  const templatesRef = useRef<WorkoutTemplate[]>([]);
+  const activeTemplateIdRef = useRef<string | null>(null);
+
+  function applyTemplates(ts: WorkoutTemplate[]) {
+    templatesRef.current = ts;
+    setTemplates(ts);
+  }
+  function applyActiveId(id: string | null) {
+    activeTemplateIdRef.current = id;
+    setActiveTemplateIdState(id);
+  }
+
+  const activeTemplateName =
+    templates.find(t => t.id === activeTemplateId)?.name ?? '';
+
   // ─── INIT ──────────────────────────────────────────────────────────
   useEffect(() => {
     // 1. Show cached routine immediately.
@@ -181,17 +209,23 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     const fallback = cached?.length ? cached : DEFAULT_EXERCISES;
     dispatch({ type: 'INIT', routine: fallback });
 
-    // 2. Sync from Appwrite in background; update if different.
-    loadTemplate(user.$id).then(remote => {
-      if (remote && remote.length > 0) {
-        dispatch({ type: 'SET_ROUTINE', routine: remote });
-        saveRoutine(remote);
+    // 2. Sync templates from Appwrite; pick the first one as active.
+    loadAllTemplates(user.$id).then(async remote => {
+      if (remote.length > 0) {
+        applyTemplates(remote);
+        applyActiveId(remote[0].id);
+        dispatch({ type: 'SET_ROUTINE', routine: remote[0].exercises });
+        saveRoutine(remote[0].exercises);
       } else {
         // First login — seed Appwrite with the local/default routine.
-        saveTemplate(user.$id, fallback);
+        const newId = await saveTemplate(user.$id, fallback, 'My Workout');
+        const t: WorkoutTemplate = { id: newId, name: 'My Workout', exercises: fallback };
+        applyTemplates([t]);
+        applyActiveId(newId);
         saveRoutine(fallback);
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── DERIVED ───────────────────────────────────────────────────────
@@ -260,7 +294,14 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     saveRoutine(routine);
     if (templateSaveTimer.current) clearTimeout(templateSaveTimer.current);
     templateSaveTimer.current = setTimeout(() => {
-      saveTemplate(user.$id, routine);
+      const id = activeTemplateIdRef.current;
+      if (!id) return;
+      const name = templatesRef.current.find(t => t.id === id)?.name ?? 'My Workout';
+      saveTemplate(user.$id, routine, name, id).then(() => {
+        applyTemplates(
+          templatesRef.current.map(t => t.id === id ? { ...t, exercises: routine } : t)
+        );
+      });
     }, 800);
   }
 
@@ -301,6 +342,55 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'RESET_SESSION' });
   }, []);
 
+  // ─── TEMPLATE ACTIONS ──────────────────────────────────────────────
+  const selectTemplate = useCallback((id: string) => {
+    const t = templatesRef.current.find(t => t.id === id);
+    if (!t) return;
+    applyActiveId(id);
+    dispatch({ type: 'INIT', routine: t.exercises });
+    saveRoutine(t.exercises);
+    sessionIdRef.current = null;
+    sessionCreateRef.current = null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveAsNewTemplate = useCallback(async (name: string) => {
+    const routine = state.routine;
+    const newId = await saveTemplate(user.$id, routine, name);
+    const t: WorkoutTemplate = { id: newId, name, exercises: routine };
+    applyTemplates([...templatesRef.current, t]);
+    applyActiveId(newId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.routine, user.$id]);
+
+  const renameTemplate = useCallback(async (id: string, name: string) => {
+    const t = templatesRef.current.find(t => t.id === id);
+    if (!t) return;
+    await saveTemplate(user.$id, t.exercises, name, id);
+    applyTemplates(templatesRef.current.map(t => t.id === id ? { ...t, name } : t));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.$id]);
+
+  const deleteTemplate = useCallback(async (id: string) => {
+    await deleteTemplateDoc(id);
+    const remaining = templatesRef.current.filter(t => t.id !== id);
+    applyTemplates(remaining);
+
+    if (activeTemplateIdRef.current === id) {
+      if (remaining.length > 0) {
+        selectTemplate(remaining[0].id);
+      } else {
+        const newId = await saveTemplate(user.$id, DEFAULT_EXERCISES, 'My Workout');
+        const t: WorkoutTemplate = { id: newId, name: 'My Workout', exercises: DEFAULT_EXERCISES };
+        applyTemplates([t]);
+        applyActiveId(newId);
+        dispatch({ type: 'INIT', routine: DEFAULT_EXERCISES });
+        saveRoutine(DEFAULT_EXERCISES);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectTemplate, user.$id]);
+
   return (
     <WorkoutContext.Provider value={{
       state, dispatch,
@@ -309,6 +399,13 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       resetSession,
       isWorkoutComplete,
       isLastSetOfExercise,
+      templates,
+      activeTemplateId,
+      activeTemplateName,
+      selectTemplate,
+      saveAsNewTemplate,
+      deleteTemplate,
+      renameTemplate,
     }}>
       {children}
     </WorkoutContext.Provider>

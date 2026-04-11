@@ -1,5 +1,11 @@
 export type Feel = 'easy' | 'right' | 'hard';
 
+export interface WorkoutTemplate {
+  id: string;      // Appwrite $id
+  name: string;
+  exercises: Exercise[];
+}
+
 export interface Exercise {
   id: string;      // local only — derived from name, never sent to Appwrite
   name: string;

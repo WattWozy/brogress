@@ -2,7 +2,7 @@
 
 import { Client, Account, Databases, ID, Query } from 'appwrite';
 import { AW_ENDPOINT, AW_PROJECT_ID, AW_DB_ID, COL_TEMPLATES, COL_SESSIONS, COL_SETS } from './config';
-import type { Exercise, SessionSet } from '@/types';
+import type { Exercise, SessionSet, WorkoutTemplate } from '@/types';
 
 // ─── CLIENT ──────────────────────────────────────────────────────────────────
 let _client: Client | null = null;
@@ -44,35 +44,48 @@ export function exerciseId(name: string): string {
 
 // ─── TEMPLATES ───────────────────────────────────────────────────────────────
 
-export async function loadTemplate(userId: string): Promise<Exercise[] | null> {
-  try {
-    const res = await getDb().listDocuments(AW_DB_ID, COL_TEMPLATES, [
-      Query.equal('userId', userId),
-      Query.limit(1),
-    ]);
-    if (res.documents.length === 0) return null;
-    const doc = res.documents[0];
-    const names    = doc.exerciseNames as string[];
-    const sets     = doc.sets    as number[];
-    const reps     = doc.reps    as number[];
-    const weights  = doc.weights as number[];
-    return names.map((name, i) => ({
+function docToTemplate(doc: Record<string, unknown>): WorkoutTemplate {
+  const names   = doc.exerciseNames as string[];
+  const sets    = doc.sets    as number[];
+  const reps    = doc.reps    as number[];
+  const weights = doc.weights as number[];
+  return {
+    id: doc.$id as string,
+    name: doc.name as string,
+    exercises: names.map((name, i) => ({
       id: exerciseId(name),
       name,
       sets:   sets[i],
       reps:   reps[i],
       weight: weights[i],
-    }));
+    })),
+  };
+}
+
+export async function loadAllTemplates(userId: string): Promise<WorkoutTemplate[]> {
+  try {
+    const res = await getDb().listDocuments(AW_DB_ID, COL_TEMPLATES, [
+      Query.equal('userId', userId),
+      Query.limit(25),
+    ]);
+    return res.documents.map(d => docToTemplate(d as unknown as Record<string, unknown>));
   } catch (e) {
-    console.warn('loadTemplate failed:', e);
-    return null;
+    console.warn('loadAllTemplates failed:', e);
+    return [];
   }
 }
 
-export async function saveTemplate(userId: string, exercises: Exercise[]): Promise<void> {
+// Creates a new template (no templateId) or updates an existing one (with templateId).
+// Returns the Appwrite $id of the document.
+export async function saveTemplate(
+  userId: string,
+  exercises: Exercise[],
+  name: string,
+  templateId?: string,
+): Promise<string> {
   const data = {
     userId,
-    name: 'My Workout',
+    name,
     exerciseNames: exercises.map(e => e.name),
     sets:    exercises.map(e => e.sets),
     reps:    exercises.map(e => e.reps),
@@ -80,17 +93,24 @@ export async function saveTemplate(userId: string, exercises: Exercise[]): Promi
   };
   try {
     const db = getDb();
-    const existing = await db.listDocuments(AW_DB_ID, COL_TEMPLATES, [
-      Query.equal('userId', userId),
-      Query.limit(1),
-    ]);
-    if (existing.documents.length > 0) {
-      await db.updateDocument(AW_DB_ID, COL_TEMPLATES, existing.documents[0].$id, data);
+    if (templateId) {
+      await db.updateDocument(AW_DB_ID, COL_TEMPLATES, templateId, data);
+      return templateId;
     } else {
-      await db.createDocument(AW_DB_ID, COL_TEMPLATES, ID.unique(), data);
+      const doc = await db.createDocument(AW_DB_ID, COL_TEMPLATES, ID.unique(), data);
+      return doc.$id;
     }
   } catch (e) {
     console.warn('saveTemplate failed:', e);
+    return templateId ?? '';
+  }
+}
+
+export async function deleteTemplate(templateId: string): Promise<void> {
+  try {
+    await getDb().deleteDocument(AW_DB_ID, COL_TEMPLATES, templateId);
+  } catch (e) {
+    console.warn('deleteTemplate failed:', e);
   }
 }
 
