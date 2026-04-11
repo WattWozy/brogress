@@ -1,8 +1,8 @@
 'use client';
 
 import { Client, Account, Databases, ID, Query } from 'appwrite';
-import { AW_ENDPOINT, AW_PROJECT_ID, AW_DB_ID, COL_TEMPLATES, COL_SESSIONS, COL_SETS } from './config';
-import type { Exercise, SessionSet, WorkoutTemplate } from '@/types';
+import { AW_ENDPOINT, AW_PROJECT_ID, AW_DB_ID, COL_TEMPLATES, COL_SESSIONS } from './config';
+import type { Exercise, Feel, SessionSet, StoredSet, WorkoutTemplate } from '@/types';
 
 // ─── CLIENT ──────────────────────────────────────────────────────────────────
 let _client: Client | null = null;
@@ -137,38 +137,16 @@ export async function completeSession(sessionId: string): Promise<void> {
 }
 
 // ─── SETS ─────────────────────────────────────────────────────────────────────
+// Sets are stored as a JSON blob on the session document — no separate collection.
+// The caller always passes the complete current set list; last write wins.
 
-export async function saveSet(
-  sessionId: string,
-  userId: string,
-  exerciseName: string,
-  setNumber: number,
-  reps: number,
-  weight: number,
-  feel: string,
-): Promise<void> {
+export async function persistSessionSets(sessionId: string, sets: StoredSet[]): Promise<void> {
   try {
-    await getDb().createDocument(AW_DB_ID, COL_SETS, ID.unique(), {
-      sessionId, userId, exerciseName, setNumber, reps, weight, feel,
+    await getDb().updateDocument(AW_DB_ID, COL_SESSIONS, sessionId, {
+      sets: JSON.stringify(sets),
     });
   } catch (e) {
-    console.warn('saveSet failed:', e);
-  }
-}
-
-// Update feel on all sets for a given exercise in a session.
-export async function updateSetsFeel(sessionId: string, exerciseName: string, feel: string): Promise<void> {
-  try {
-    const db = getDb();
-    const res = await db.listDocuments(AW_DB_ID, COL_SETS, [
-      Query.equal('sessionId', sessionId),
-      Query.equal('exerciseName', exerciseName),
-    ]);
-    await Promise.all(
-      res.documents.map(doc => db.updateDocument(AW_DB_ID, COL_SETS, doc.$id, { feel }))
-    );
-  } catch (e) {
-    console.warn('updateSetsFeel failed:', e);
+    console.warn('persistSessionSets failed:', e);
   }
 }
 
@@ -189,16 +167,34 @@ export async function loadLatestSessionId(userId: string): Promise<string | null
   }
 }
 
-// Fetches sets directly by userId (uses idx_userId_createdAt), bypassing the
-// sessions → sets N+1 pattern.  Default limit covers ~10 typical sessions.
-export async function loadRecentSets(userId: string, limit = 300): Promise<SessionSet[]> {
+// Fetches sets from the most recent sessions. One request for N sessions,
+// each carrying its full sets blob — replaces the old 300-document query.
+export async function loadRecentSets(userId: string, sessionLimit = 15): Promise<SessionSet[]> {
   try {
-    const res = await getDb().listDocuments(AW_DB_ID, COL_SETS, [
+    const res = await getDb().listDocuments(AW_DB_ID, COL_SESSIONS, [
       Query.equal('userId', userId),
       Query.orderDesc('$createdAt'),
-      Query.limit(limit),
+      Query.limit(sessionLimit),
+      Query.select(['$id', 'sets']),
     ]);
-    return res.documents as unknown as SessionSet[];
+    const sets: SessionSet[] = [];
+    for (const doc of res.documents) {
+      if (!doc.sets) continue;
+      const stored: StoredSet[] = JSON.parse(doc.sets as string);
+      for (const s of stored) {
+        sets.push({
+          $id: `${doc.$id}:${s.exerciseName}:${s.setNumber}`,
+          sessionId: doc.$id,
+          userId,
+          exerciseName: s.exerciseName,
+          setNumber: s.setNumber,
+          reps: s.reps,
+          weight: s.weight,
+          feel: s.feel as Feel | '',
+        });
+      }
+    }
+    return sets;
   } catch (e) {
     console.warn('loadRecentSets failed:', e);
     return [];
@@ -211,6 +207,7 @@ export async function loadSessionDates(userId: string): Promise<{ sessionId: str
       Query.equal('userId', userId),
       Query.orderDesc('date'),
       Query.limit(60),
+      Query.select(['$id', 'date']),
     ]);
     return res.documents.map(d => ({ sessionId: d.$id, date: d.date as string }));
   } catch (e) {
@@ -221,11 +218,19 @@ export async function loadSessionDates(userId: string): Promise<{ sessionId: str
 
 export async function loadSessionSets(sessionId: string): Promise<SessionSet[]> {
   try {
-    const res = await getDb().listDocuments(AW_DB_ID, COL_SETS, [
-      Query.equal('sessionId', sessionId),
-      Query.orderAsc('setNumber'),
-    ]);
-    return res.documents as unknown as SessionSet[];
+    const doc = await getDb().getDocument(AW_DB_ID, COL_SESSIONS, sessionId);
+    if (!doc.sets) return [];
+    const stored: StoredSet[] = JSON.parse(doc.sets as string);
+    return stored.map(s => ({
+      $id: `${sessionId}:${s.exerciseName}:${s.setNumber}`,
+      sessionId,
+      userId: doc.userId as string,
+      exerciseName: s.exerciseName,
+      setNumber: s.setNumber,
+      reps: s.reps,
+      weight: s.weight,
+      feel: s.feel as Feel | '',
+    }));
   } catch (e) {
     console.warn('loadSessionSets failed:', e);
     return [];

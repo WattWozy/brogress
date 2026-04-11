@@ -18,9 +18,18 @@ export interface QueuedExercise extends Exercise {
   originalIdx?: number;
 }
 
+// Compact set record stored in the session document's JSON blob.
+export interface StoredSet {
+  exerciseName: string;
+  setNumber: number;
+  reps: number;
+  weight: number;
+  feel: string;
+}
+
+// Hydrated set — SessionSet is what the rest of the app works with after reading.
 export interface SessionSet {
   $id: string;
-  $createdAt?: string;
   sessionId: string;
   userId: string;
   exerciseName: string;

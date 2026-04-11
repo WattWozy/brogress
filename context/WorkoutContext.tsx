@@ -4,13 +4,13 @@ import React, {
   createContext, useContext, useReducer, useCallback,
   useEffect, useRef, useState, type Dispatch,
 } from 'react';
-import type { Exercise, Feel, QueuedExercise, WorkoutTemplate } from '@/types';
+import type { Exercise, Feel, QueuedExercise, StoredSet, WorkoutTemplate } from '@/types';
 import { DEFAULT_EXERCISES } from '@/lib/defaults';
 import { saveRoutine, loadRoutine } from '@/lib/storage';
 import { useAuth } from '@/context/AuthContext';
 import {
   loadAllTemplates, saveTemplate, deleteTemplate as deleteTemplateDoc,
-  createSession, completeSession, saveSet, updateSetsFeel, exerciseId,
+  createSession, completeSession, persistSessionSets, exerciseId,
 } from '@/lib/appwrite';
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
@@ -184,6 +184,12 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const sessionIdRef = useRef<string | null>(null);
   const sessionCreateRef = useRef<Promise<string> | null>(null);
 
+  // Accumulates every set logged in the current session (source of truth for DB writes).
+  const sessionSetsRef = useRef<StoredSet[]>([]);
+  // Write queue: ensures rapid DONE taps never produce out-of-order or missing writes.
+  const pendingFlushRef = useRef<Promise<void> | null>(null);
+  const needsReflushRef = useRef(false);
+
   // Debounce template saves so rapid weight adjustments don't hammer Appwrite.
   const templateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -254,6 +260,24 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     return sessionCreateRef.current;
   }
 
+  // Writes the full current sets blob to the session document.
+  // If a write is already in-flight, flags that another write is needed afterwards
+  // so the latest data is never lost even with rapid DONE taps.
+  function flushSets(sessionId: string) {
+    if (pendingFlushRef.current) {
+      needsReflushRef.current = true;
+      return;
+    }
+    const sets = sessionSetsRef.current;
+    pendingFlushRef.current = persistSessionSets(sessionId, sets).finally(() => {
+      pendingFlushRef.current = null;
+      if (needsReflushRef.current) {
+        needsReflushRef.current = false;
+        flushSets(sessionId);
+      }
+    });
+  }
+
   // ─── COMPLETE SESSION ──────────────────────────────────────────────
   useEffect(() => {
     if (isWorkoutComplete && sessionIdRef.current) {
@@ -264,15 +288,14 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   // ─── HANDLE DONE ───────────────────────────────────────────────────
   const handleDone = useCallback(() => {
     if (!currentEx) return;
-    const setNum = state.currentSet;
-
-    ensureSession().then(sessionId => {
-      saveSet(sessionId, user.$id, currentEx.name, setNum, currentEx.reps, currentEx.weight, '');
-    });
-
+    sessionSetsRef.current = [
+      ...sessionSetsRef.current,
+      { exerciseName: currentEx.name, setNumber: state.currentSet, reps: currentEx.reps, weight: currentEx.weight, feel: '' },
+    ];
     dispatch({ type: 'ADVANCE_SET' });
+    ensureSession().then(sessionId => flushSets(sessionId));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentEx, state.currentSet, user.$id]);
+  }, [currentEx, state.currentSet]);
 
   // ─── HANDLE SKIP ───────────────────────────────────────────────────
   const handleSkip = useCallback(() => {
@@ -283,9 +306,10 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const handleSetFeel = useCallback((feel: Feel) => {
     if (!currentEx) return;
     dispatch({ type: 'SET_FEEL', exerciseId: currentEx.id, feel });
-    if (sessionIdRef.current) {
-      updateSetsFeel(sessionIdRef.current, currentEx.name, feel);
-    }
+    sessionSetsRef.current = sessionSetsRef.current.map(s =>
+      s.exerciseName === currentEx.name ? { ...s, feel } : s
+    );
+    if (sessionIdRef.current) flushSets(sessionIdRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentEx]);
 
@@ -344,6 +368,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const resetSession = useCallback(() => {
     sessionIdRef.current = null;
     sessionCreateRef.current = null;
+    sessionSetsRef.current = [];
     dispatch({ type: 'RESET_SESSION' });
   }, []);
 
@@ -356,6 +381,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     saveRoutine(t.exercises);
     sessionIdRef.current = null;
     sessionCreateRef.current = null;
+    sessionSetsRef.current = [];
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

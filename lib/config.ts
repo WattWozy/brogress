@@ -4,4 +4,3 @@ export const AW_DB_ID      = process.env.NEXT_PUBLIC_APPWRITE_DB_ID      ?? 'YOU
 
 export const COL_TEMPLATES = 'templates';
 export const COL_SESSIONS  = 'sessions';
-export const COL_SETS      = 'session_sets';
