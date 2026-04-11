@@ -59,7 +59,7 @@ export function TemplateManager({ visible, onClose }: TemplateManagerProps) {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Delete this template?')) return;
+    if (!window.confirm('Delete this workout?')) return;
     await deleteTemplate(id);
   }
 
@@ -121,7 +121,7 @@ export function TemplateManager({ visible, onClose }: TemplateManagerProps) {
           textTransform: 'uppercase', color: '#f0f0f0',
           flexShrink: 0,
         }}>
-          Templates
+          Workouts
         </div>
 
         {/* Template list */}

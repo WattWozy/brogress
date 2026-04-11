@@ -11,9 +11,10 @@ import type { Feel } from '@/types';
 
 interface TodayPanelProps {
   onShowToast: (msg: string) => void;
+  planReady: boolean;
 }
 
-export function TodayPanel({ onShowToast }: TodayPanelProps) {
+export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
   const { state, dispatch, handleDone, handleSkip, handleSetFeel, isWorkoutComplete, isLastSetOfExercise } = useWorkout();
   const [showFeel, setShowFeel] = useState(false);
   const [doneBtnFlash, setDoneBtnFlash] = useState(false);
@@ -69,61 +70,89 @@ export function TodayPanel({ onShowToast }: TodayPanelProps) {
         padding: '0 24px',
         position: 'relative', overflow: 'hidden',
       }}>
-        <ExerciseCard onFeelRequired={() => setShowFeel(true)} feel={currentFeel} />
-        <FeelOverlay visible={showFeel} onSelect={onFeelSelect} />
-        <WorkoutDoneOverlay visible={isWorkoutComplete} />
+        {planReady ? (
+          <>
+            <ExerciseCard onFeelRequired={() => setShowFeel(true)} feel={currentFeel} />
+            <FeelOverlay visible={showFeel} onSelect={onFeelSelect} />
+            <WorkoutDoneOverlay visible={isWorkoutComplete} />
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{
+              fontFamily: "'Barlow Condensed', sans-serif",
+              fontSize: 'clamp(52px, 14vw, 88px)',
+              fontWeight: 900, lineHeight: 0.92,
+              letterSpacing: '-0.01em',
+              textTransform: 'uppercase',
+              color: '#222',
+            }}>
+              BUILD YOUR<br />PLAN FIRST
+            </div>
+            <div style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 11, color: '#444',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              marginTop: 28,
+            }}>
+              ← swipe left to get started
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Queued strip */}
-      <QueuedStrip onReinject={onReinject} />
-
-      {/* Action buttons */}
-      <div style={{ padding: '0 24px 36px', display: 'flex', gap: 12, alignItems: 'stretch' }}>
-        <button
-          onClick={onDone}
-          style={{
-            flex: 1,
-            background: '#f5a623',
-            color: '#000',
-            border: 'none',
-            borderRadius: 100,
-            fontFamily: "'Barlow Condensed', sans-serif",
-            fontSize: 26, fontWeight: 900,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            padding: '20px 0',
-            cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
-            userSelect: 'none',
-            animation: doneBtnFlash ? 'done-flash 0.35s ease-out' : 'none',
-            transition: 'transform 0.12s, background 0.12s',
-          }}
-        >
-          DONE
-        </button>
-        <button
-          onClick={onSkip}
-          style={{
-            width: 90,
-            background: '#2a2a2a',
-            color: '#888',
-            border: '1px solid #444',
-            borderRadius: 100,
-            fontFamily: "'DM Mono', monospace",
-            fontSize: 11,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            padding: '20px 0',
-            cursor: 'pointer',
-            userSelect: 'none',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-          }}
-        >
-          <span style={{ fontSize: 16 }}>↓</span>
-          <span>SKIP</span>
-        </button>
-      </div>
+      {/* Queued strip + action buttons — hidden until plan is ready */}
+      {planReady && (
+        <>
+          <QueuedStrip onReinject={onReinject} />
+          <div style={{ padding: '0 24px 36px', display: 'flex', gap: 12, alignItems: 'stretch' }}>
+            <button
+              onClick={onDone}
+              style={{
+                flex: 1,
+                background: '#f5a623',
+                color: '#000',
+                border: 'none',
+                borderRadius: 100,
+                fontFamily: "'Barlow Condensed', sans-serif",
+                fontSize: 26, fontWeight: 900,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                padding: '20px 0',
+                cursor: 'pointer',
+                position: 'relative',
+                overflow: 'hidden',
+                userSelect: 'none',
+                animation: doneBtnFlash ? 'done-flash 0.35s ease-out' : 'none',
+                transition: 'transform 0.12s, background 0.12s',
+              }}
+            >
+              DONE
+            </button>
+            <button
+              onClick={onSkip}
+              style={{
+                width: 90,
+                background: '#2a2a2a',
+                color: '#888',
+                border: '1px solid #444',
+                borderRadius: 100,
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 11,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                padding: '20px 0',
+                cursor: 'pointer',
+                userSelect: 'none',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+              }}
+            >
+              <span style={{ fontSize: 16 }}>↓</span>
+              <span>SKIP</span>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

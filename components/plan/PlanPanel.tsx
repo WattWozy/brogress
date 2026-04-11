@@ -8,9 +8,10 @@ import { TemplateManager } from './TemplateManager';
 
 interface PlanPanelProps {
   onShowToast: (msg: string) => void;
+  planReady: boolean;
 }
 
-export function PlanPanel({ onShowToast }: PlanPanelProps) {
+export function PlanPanel({ onShowToast, planReady }: PlanPanelProps) {
   const { state, removeExercise, reorderRoutine, activeTemplateName } = useWorkout();
   const [searchOpen, setSearchOpen] = useState(false);
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
@@ -28,25 +29,39 @@ export function PlanPanel({ onShowToast }: PlanPanelProps) {
             Plan
           </div>
           {activeTemplateName ? (
-            <button
-              onClick={() => setTemplateManagerOpen(true)}
-              style={{
-                background: 'none', border: 'none', padding: '2px 0',
-                cursor: 'pointer',
-                fontFamily: "'DM Mono', monospace",
-                fontSize: 10, color: '#f5a623',
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                display: 'flex', alignItems: 'center', gap: 4,
-                opacity: 1,
-                transition: 'opacity 0.12s',
-              }}
-              onPointerDown={e => (e.currentTarget.style.opacity = '0.5')}
-              onPointerUp={e => (e.currentTarget.style.opacity = '1')}
-              onPointerLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
-              {activeTemplateName}
-              <span style={{ fontSize: 8, lineHeight: 1 }}>▾</span>
-            </button>
+            <>
+              <button
+                onClick={() => setTemplateManagerOpen(true)}
+                style={{
+                  background: 'none', border: 'none', padding: '2px 0',
+                  cursor: 'pointer',
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: 10, color: '#f5a623',
+                  letterSpacing: '0.1em', textTransform: 'uppercase',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  opacity: 1,
+                  transition: 'opacity 0.12s',
+                }}
+                onPointerDown={e => (e.currentTarget.style.opacity = '0.5')}
+                onPointerUp={e => (e.currentTarget.style.opacity = '1')}
+                onPointerLeave={e => (e.currentTarget.style.opacity = '1')}
+              >
+                {activeTemplateName}
+                <span style={{ fontSize: 8, lineHeight: 1 }}>▾</span>
+              </button>
+              {!planReady && (
+                <div style={{
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: 9, letterSpacing: '0.1em',
+                  color: '#f5a623', textTransform: 'uppercase',
+                  marginTop: 6,
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  animation: 'hint-blink 2s ease-in-out infinite',
+                }}>
+                  <span style={{ fontSize: 11 }}>↑</span> tap to save / select plan
+                </div>
+              )}
+            </>
           ) : null}
         </div>
         <div style={{

@@ -68,6 +68,18 @@ a {
   90%       { transform: translateX(-2px); }
 }
 
+/* Swipe hint arrows (edge overlays — bakes in the centering transform) */
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.18; transform: translateY(-50%) scale(1); }
+  50%       { opacity: 0.45; transform: translateY(-50%) scale(1.08); }
+}
+
+/* Inline hints (no transform — opacity only) */
+@keyframes hint-blink {
+  0%, 100% { opacity: 0.25; }
+  50%       { opacity: 0.65; }
+}
+
 /* Suppress number input spinners */
 input[type='number'] { -moz-appearance: textfield; }
 input[type='number']::-webkit-outer-spin-button,
