@@ -228,6 +228,7 @@ export async function loadRecentSets(userId: string, sessionLimit = 15): Promise
   return sets;
 }
 
+
 export async function loadSessionDates(userId: string): Promise<{ sessionId: string; date: string }[]> {
   try {
     const res = await getDb().listDocuments(AW_DB_ID, COL_SESSIONS, [

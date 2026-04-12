@@ -13,6 +13,20 @@ import {
   createSession, completeSession, persistSessionSets, exerciseId,
 } from '@/lib/appwrite';
 
+const DONE_KEY = 'brogress_session_done';
+function readDoneToday(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = localStorage.getItem(DONE_KEY);
+    if (!raw) return false;
+    return JSON.parse(raw).date === new Date().toISOString().slice(0, 10);
+  } catch { return false; }
+}
+function writeDoneToday() {
+  try { localStorage.setItem(DONE_KEY, JSON.stringify({ date: new Date().toISOString().slice(0, 10) })); }
+  catch { /* storage full */ }
+}
+
 // ─── STATE ────────────────────────────────────────────────────────────────────
 export interface WorkoutState {
   routine: Exercise[];
@@ -164,6 +178,7 @@ interface WorkoutContextValue {
   resetSession: () => void;
   isWorkoutComplete: boolean;
   isLastSetOfExercise: boolean;
+  sessionCompletedToday: boolean;
   // ─── Templates ───
   templates: WorkoutTemplate[];
   activeTemplateId: string | null;
@@ -192,6 +207,8 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   // Debounce template saves so rapid weight adjustments don't hammer Appwrite.
   const templateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [sessionCompletedToday, setSessionCompletedToday] = useState(readDoneToday);
 
   // ─── TEMPLATES ─────────────────────────────────────────────────────
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
@@ -282,6 +299,8 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isWorkoutComplete && sessionIdRef.current) {
       completeSession(sessionIdRef.current);
+      writeDoneToday();
+      setSessionCompletedToday(true);
     }
   }, [isWorkoutComplete]);
 
@@ -430,6 +449,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       resetSession,
       isWorkoutComplete,
       isLastSetOfExercise,
+      sessionCompletedToday,
       templates,
       activeTemplateId,
       activeTemplateName,

@@ -15,7 +15,8 @@ interface TodayPanelProps {
 }
 
 export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
-  const { state, dispatch, handleDone, handleSkip, handleSetFeel, isWorkoutComplete, isLastSetOfExercise } = useWorkout();
+  const { state, dispatch, handleDone, handleSkip, handleSetFeel, isWorkoutComplete, isLastSetOfExercise, sessionCompletedToday } = useWorkout();
+  const isDone = isWorkoutComplete || sessionCompletedToday;
   const [showFeel, setShowFeel] = useState(false);
   const [doneBtnFlash, setDoneBtnFlash] = useState(false);
   const prevExIdRef = useRef(state.queue[state.currentExIdx]?.id);
@@ -74,7 +75,7 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
           <>
             <ExerciseCard onFeelRequired={() => setShowFeel(true)} feel={currentFeel} />
             <FeelOverlay visible={showFeel} onSelect={onFeelSelect} />
-            <WorkoutDoneOverlay visible={isWorkoutComplete} />
+            <WorkoutDoneOverlay visible={isDone} />
           </>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -102,7 +103,7 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
       </div>
 
       {/* Queued strip + action buttons — hidden until plan is ready, hidden when workout is complete */}
-      {planReady && !isWorkoutComplete && (
+      {planReady && !isDone && (
         <>
           <QueuedStrip onReinject={onReinject} />
           <div style={{ padding: '0 24px 36px', display: 'flex', gap: 12, alignItems: 'stretch' }}>
