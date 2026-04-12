@@ -1,7 +1,7 @@
 'use client';
 
 import { Client, Account, Databases, ID, Query } from 'appwrite';
-import { AW_ENDPOINT, AW_PROJECT_ID, AW_DB_ID, COL_TEMPLATES, COL_SESSIONS } from './config';
+import { AW_ENDPOINT, AW_PROJECT_ID, AW_DB_ID, COL_TEMPLATES, COL_SESSIONS, COL_SETS } from './config';
 import type { Exercise, Feel, SessionSet, StoredSet, WorkoutTemplate } from '@/types';
 
 // ─── CLIENT ──────────────────────────────────────────────────────────────────
@@ -167,9 +167,13 @@ export async function loadLatestSessionId(userId: string): Promise<string | null
   }
 }
 
-// Fetches sets from the most recent sessions. One request for N sessions,
-// each carrying its full sets blob — replaces the old 300-document query.
+// Fetches sets from the most recent sessions. Queries the new JSON-blob format
+// first (newer sessions), then falls back to the legacy session_sets collection
+// (pre-refactor sessions), so deltas can still be computed from historical data.
 export async function loadRecentSets(userId: string, sessionLimit = 15): Promise<SessionSet[]> {
+  const sets: SessionSet[] = [];
+
+  // New-format sessions (JSON blob on session document) — most recent first.
   try {
     const res = await getDb().listDocuments(AW_DB_ID, COL_SESSIONS, [
       Query.equal('userId', userId),
@@ -177,7 +181,6 @@ export async function loadRecentSets(userId: string, sessionLimit = 15): Promise
       Query.limit(sessionLimit),
       Query.select(['$id', 'sets']),
     ]);
-    const sets: SessionSet[] = [];
     for (const doc of res.documents) {
       if (!doc.sets) continue;
       const stored: StoredSet[] = JSON.parse(doc.sets as string);
@@ -194,11 +197,35 @@ export async function loadRecentSets(userId: string, sessionLimit = 15): Promise
         });
       }
     }
-    return sets;
   } catch (e) {
-    console.warn('loadRecentSets failed:', e);
-    return [];
+    console.warn('loadRecentSets (new format) failed:', e);
   }
+
+  // Legacy-format sets (individual documents in session_sets collection) — appended after
+  // new-format sets so newer sessions always come first for delta computation.
+  try {
+    const res = await getDb().listDocuments(AW_DB_ID, COL_SETS, [
+      Query.equal('userId', userId),
+      Query.orderDesc('$createdAt'),
+      Query.limit(300),
+    ]);
+    for (const doc of res.documents) {
+      sets.push({
+        $id: doc.$id as string,
+        sessionId: doc.sessionId as string,
+        userId,
+        exerciseName: doc.exerciseName as string,
+        setNumber: doc.setNumber as number,
+        reps: doc.reps as number,
+        weight: doc.weight as number,
+        feel: (doc.feel ?? '') as Feel | '',
+      });
+    }
+  } catch {
+    // Legacy collection may not exist on fresh installs — silently ignore.
+  }
+
+  return sets;
 }
 
 export async function loadSessionDates(userId: string): Promise<{ sessionId: string; date: string }[]> {

@@ -50,24 +50,21 @@ export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
         {state.completedSets} sets across{' '}
         {state.queue.length + state.skipped.length} exercises
       </div>
-      <button
-        onClick={resetSession}
-        style={{
-          marginTop: 20,
-          background: '#f5a623',
-          color: '#000',
-          border: 'none',
-          borderRadius: 100,
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontSize: 20, fontWeight: 900,
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
-          padding: '16px 40px',
-          cursor: 'pointer',
-        }}
-      >
-        Next Session
-      </button>
+      <div style={{
+        marginTop: 20,
+        background: '#1a1a1a',
+        color: '#555',
+        border: '1px solid #333',
+        borderRadius: 100,
+        fontFamily: "'Barlow Condensed', sans-serif",
+        fontSize: 20, fontWeight: 900,
+        letterSpacing: '0.05em',
+        textTransform: 'uppercase',
+        padding: '16px 40px',
+        userSelect: 'none',
+      }}>
+        Well done. Now rest
+      </div>
     </div>
   );
 }

@@ -101,8 +101,8 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
         )}
       </div>
 
-      {/* Queued strip + action buttons — hidden until plan is ready */}
-      {planReady && (
+      {/* Queued strip + action buttons — hidden until plan is ready, hidden when workout is complete */}
+      {planReady && !isWorkoutComplete && (
         <>
           <QueuedStrip onReinject={onReinject} />
           <div style={{ padding: '0 24px 36px', display: 'flex', gap: 12, alignItems: 'stretch' }}>
