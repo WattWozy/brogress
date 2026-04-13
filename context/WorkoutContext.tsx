@@ -42,6 +42,19 @@ function clearPersistedProgress() {
   try { localStorage.removeItem(PROGRESS_KEY); } catch { /* ignore */ }
 }
 
+// Remembers which template was active so page refreshes restore the right plan.
+const ACTIVE_TEMPLATE_KEY = 'brogress_active_template';
+function readStoredActiveTemplateId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return localStorage.getItem(ACTIVE_TEMPLATE_KEY); } catch { return null; }
+}
+function writeStoredActiveTemplateId(id: string | null) {
+  try {
+    if (id) localStorage.setItem(ACTIVE_TEMPLATE_KEY, id);
+    else localStorage.removeItem(ACTIVE_TEMPLATE_KEY);
+  } catch { /* storage full */ }
+}
+
 const DONE_KEY = 'brogress_session_done';
 function readDoneToday(): boolean {
   if (typeof window === 'undefined') return false;
@@ -246,7 +259,7 @@ interface WorkoutContextValue {
   templates: WorkoutTemplate[];
   activeTemplateId: string | null;
   activeTemplateName: string;
-  selectTemplate: (id: string) => void;
+  selectTemplate: (id: string) => Promise<void>;
   saveAsNewTemplate: (name: string) => Promise<void>;
   deleteTemplate: (id: string) => Promise<void>;
   renameTemplate: (id: string, name: string) => Promise<void>;
@@ -272,6 +285,9 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   // Debounce template saves so rapid weight adjustments don't hammer Appwrite.
   const templateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The routine that is waiting to be persisted; lets flushPendingTemplateSave
+  // know what data to write when we need to commit synchronously (e.g. on switch).
+  const pendingRoutineRef = useRef<Exercise[] | null>(null);
 
   const [sessionCompletedToday, setSessionCompletedToday] = useState(readDoneToday);
   const [progressionSuggestions, setProgressionSuggestions] = useState<ProgressionSuggestion[]>(readStoredProgression);
@@ -291,6 +307,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   function applyActiveId(id: string | null) {
     activeTemplateIdRef.current = id;
     setActiveTemplateIdState(id);
+    writeStoredActiveTemplateId(id);
   }
 
   const activeTemplateName =
@@ -303,13 +320,19 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     const fallback = cached?.length ? cached : DEFAULT_EXERCISES;
     dispatch({ type: 'INIT', routine: fallback });
 
-    // 2. Sync templates from Appwrite; pick the first one as active.
+    // 2. Sync templates from Appwrite; restore the previously-active template if
+    //    it is still present, otherwise fall back to the first template in the list.
     loadAllTemplates(user.$id).then(async remote => {
       if (remote.length > 0) {
         applyTemplates(remote);
-        applyActiveId(remote[0].id);
-        dispatch({ type: 'SET_ROUTINE', routine: remote[0].exercises });
-        saveRoutine(remote[0].exercises);
+        const storedId = readStoredActiveTemplateId();
+        const initial = remote.find(t => t.id === storedId) ?? remote[0];
+        applyActiveId(initial.id);
+        // Deep-copy exercises into state so state.routine is never aliased to a
+        // template's exercise array — mutations always produce distinct objects.
+        const exercises = initial.exercises.map(e => ({ ...e }));
+        dispatch({ type: 'SET_ROUTINE', routine: exercises });
+        saveRoutine(exercises);
 
         // Restore any in-progress session from today so a closed browser doesn't
         // lose workout progress — reuse the existing session document.
@@ -448,17 +471,45 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     // write to the wrong (now-active) template.
     const id = activeTemplateIdRef.current;
     if (!id) return;
+    // Always track the latest pending routine so flushPendingTemplateSave can
+    // write the correct data even if the timer is cancelled early.
+    pendingRoutineRef.current = routine;
     if (templateSaveTimer.current) clearTimeout(templateSaveTimer.current);
-    templateSaveTimer.current = setTimeout(() => {
-      const name = templatesRef.current.find(t => t.id === id)?.name ?? 'My Workout';
+    templateSaveTimer.current = setTimeout(async () => {
+      templateSaveTimer.current = null;
+      pendingRoutineRef.current = null;
       // Guard: skip if the template was deleted while the timer was pending.
       if (!templatesRef.current.some(t => t.id === id)) return;
-      saveTemplate(user.$id, routine, name, id).then(() => {
+      const name = templatesRef.current.find(t => t.id === id)?.name ?? 'My Workout';
+      await saveTemplate(user.$id, routine, name, id);
+      // Re-check after async in case the template was deleted while the write was in-flight.
+      if (templatesRef.current.some(t => t.id === id)) {
         applyTemplates(
           templatesRef.current.map(t => t.id === id ? { ...t, exercises: routine } : t)
         );
-      });
+      }
     }, 800);
+  }
+
+  // Commits any pending debounced save immediately (synchronously cancels the timer,
+  // then awaits the Appwrite write). Call this before switching away from a template
+  // so in-progress edits are never silently discarded.
+  async function flushPendingTemplateSave() {
+    if (!templateSaveTimer.current) return;          // nothing pending
+    clearTimeout(templateSaveTimer.current);
+    templateSaveTimer.current = null;
+    const routine = pendingRoutineRef.current;
+    pendingRoutineRef.current = null;
+    const id = activeTemplateIdRef.current;
+    if (!routine || !id) return;
+    if (!templatesRef.current.some(t => t.id === id)) return; // template was deleted
+    const name = templatesRef.current.find(t => t.id === id)?.name ?? 'My Workout';
+    await saveTemplate(user.$id, routine, name, id);
+    if (templatesRef.current.some(t => t.id === id)) {
+      applyTemplates(
+        templatesRef.current.map(t => t.id === id ? { ...t, exercises: routine } : t)
+      );
+    }
   }
 
   // ─── ROUTINE MUTATIONS ─────────────────────────────────────────────
@@ -518,25 +569,36 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   }, [state.routine, user.$id]);
 
   // ─── TEMPLATE ACTIONS ──────────────────────────────────────────────
-  const selectTemplate = useCallback((id: string) => {
+  const selectTemplate = useCallback(async (id: string) => {
     const t = templatesRef.current.find(t => t.id === id);
     if (!t) return;
-    // Cancel any debounced save from the previous template so it doesn't
-    // fire after the switch and overwrite the newly-active template.
-    if (templateSaveTimer.current) { clearTimeout(templateSaveTimer.current); templateSaveTimer.current = null; }
+    // Flush any pending save for the current template BEFORE switching so edits
+    // the user just made are not silently discarded.  (If the current template is
+    // being deleted the caller is responsible for cancelling the timer first.)
+    await flushPendingTemplateSave();
     applyActiveId(id);
-    dispatch({ type: 'INIT', routine: t.exercises });
-    saveRoutine(t.exercises);
+    // Deep-copy each exercise object so state.routine is never aliased to the
+    // template's stored array — future mutations produce fresh objects only.
+    const exercises = t.exercises.map(e => ({ ...e }));
+    dispatch({ type: 'INIT', routine: exercises });
+    saveRoutine(exercises);
     sessionIdRef.current = null;
     setSessionId(null);
     sessionCreateRef.current = null;
     sessionSetsRef.current = [];
     clearPersistedProgress();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user.$id]);
 
   const saveAsNewTemplate = useCallback(async (name: string) => {
-    const routine = state.routine;
+    // Snapshot the current routine with a deep copy so the new template's exercise
+    // array is independent of anything the caller or a stale timer might mutate.
+    const routine = state.routine.map(e => ({ ...e }));
+    // Cancel any pending save for the old active template.  "Save as new" means
+    // the user intends these exercises to live in the new template only; the old
+    // template should stay at whatever it last committed to Appwrite.
+    if (templateSaveTimer.current) { clearTimeout(templateSaveTimer.current); templateSaveTimer.current = null; }
+    pendingRoutineRef.current = null;
     const newId = await saveTemplate(user.$id, routine, name);
     const t: WorkoutTemplate = { id: newId, name, exercises: routine };
     applyTemplates([...templatesRef.current, t]);
@@ -553,23 +615,31 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   }, [user.$id]);
 
   const deleteTemplate = useCallback(async (id: string) => {
-    // Cancel any in-flight debounced save so it can't land on a different template
-    // after this deletion changes the active template ID.
-    if (templateSaveTimer.current) { clearTimeout(templateSaveTimer.current); templateSaveTimer.current = null; }
+    if (id === activeTemplateIdRef.current) {
+      // Deleting the active template: discard any pending save — there is no point
+      // persisting changes to a template that is about to be removed.
+      if (templateSaveTimer.current) { clearTimeout(templateSaveTimer.current); templateSaveTimer.current = null; }
+      pendingRoutineRef.current = null;
+    }
+    // For a non-active template: the timer only ever tracks the ACTIVE template,
+    // so there is nothing to cancel — just delete straight away.
     await deleteTemplateDoc(id);
     const remaining = templatesRef.current.filter(t => t.id !== id);
     applyTemplates(remaining);
 
     if (activeTemplateIdRef.current === id) {
       if (remaining.length > 0) {
-        selectTemplate(remaining[0].id);
+        // selectTemplate will flush nothing (timer was cleared above) and load remaining[0].
+        await selectTemplate(remaining[0].id);
       } else {
-        const newId = await saveTemplate(user.$id, DEFAULT_EXERCISES, 'My Workout');
-        const t: WorkoutTemplate = { id: newId, name: 'My Workout', exercises: DEFAULT_EXERCISES };
+        // No templates left — seed a blank one.
+        const seed = DEFAULT_EXERCISES.map(e => ({ ...e }));
+        const newId = await saveTemplate(user.$id, seed, 'My Workout');
+        const t: WorkoutTemplate = { id: newId, name: 'My Workout', exercises: seed };
         applyTemplates([t]);
         applyActiveId(newId);
-        dispatch({ type: 'INIT', routine: DEFAULT_EXERCISES });
-        saveRoutine(DEFAULT_EXERCISES);
+        dispatch({ type: 'INIT', routine: seed });
+        saveRoutine(seed);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
