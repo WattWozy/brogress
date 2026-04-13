@@ -5,9 +5,12 @@ import { useWorkout } from '@/context/WorkoutContext';
 import { ProgressBar } from './ProgressBar';
 import { ExerciseCard } from './ExerciseCard';
 import { FeelOverlay } from './FeelOverlay';
+import { RestTimerModal } from './RestTimerModal';
 import { WorkoutDoneOverlay } from './WorkoutDoneOverlay';
 import { QueuedStrip } from './QueuedStrip';
 import type { Feel } from '@/types';
+
+const REST_DURATIONS = [60, 90, 120, 180] as const;
 
 interface TodayPanelProps {
   onShowToast: (msg: string) => void;
@@ -19,6 +22,13 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
   const isDone = isWorkoutComplete || sessionCompletedToday;
   const [showFeel, setShowFeel] = useState(false);
   const [doneBtnFlash, setDoneBtnFlash] = useState(false);
+  const [showRest, setShowRest] = useState(false);
+  const [restDuration, setRestDuration] = useState<number | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const saved = localStorage.getItem('restDuration');
+    if (!saved || saved === 'null') return null;
+    return parseInt(saved, 10);
+  });
   const prevExIdRef = useRef(state.queue[state.currentExIdx]?.id);
 
   const currentEx = state.queue[state.currentExIdx];
@@ -29,6 +39,20 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
     prevExIdRef.current = currentEx?.id;
   }, [currentEx?.id]);
 
+  const cycleRestDuration = useCallback(() => {
+    setRestDuration(prev => {
+      let next: number | null;
+      if (prev === null) {
+        next = REST_DURATIONS[0];
+      } else {
+        const idx = REST_DURATIONS.indexOf(prev as typeof REST_DURATIONS[number]);
+        next = idx >= REST_DURATIONS.length - 1 ? null : REST_DURATIONS[idx + 1];
+      }
+      localStorage.setItem('restDuration', String(next));
+      return next;
+    });
+  }, []);
+
   const onDone = useCallback(() => {
     setDoneBtnFlash(true);
     setTimeout(() => setDoneBtnFlash(false), 400);
@@ -37,8 +61,9 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
       setShowFeel(true);
     } else {
       handleDone();
+      if (restDuration) setShowRest(true);
     }
-  }, [handleDone, isLastSetOfExercise]);
+  }, [handleDone, isLastSetOfExercise, restDuration]);
 
   const onSkip = useCallback(() => {
     if (!currentEx) return;
@@ -52,7 +77,8 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
     handleSetFeel(feel);                 // record feel
     setShowFeel(false);
     dispatch({ type: 'ADVANCE_EXERCISE' });
-  }, [currentEx, handleDone, handleSetFeel, dispatch]);
+    if (restDuration) setShowRest(true);
+  }, [currentEx, handleDone, handleSetFeel, dispatch, restDuration]);
 
   const onReinject = useCallback((idx: number) => {
     const name = state.skipped[idx]?.name;
@@ -75,6 +101,11 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
           <>
             <ExerciseCard onFeelRequired={() => setShowFeel(true)} feel={currentFeel} />
             <FeelOverlay visible={showFeel} onSelect={onFeelSelect} />
+            <RestTimerModal
+              visible={showRest}
+              duration={restDuration ?? 90}
+              onDismiss={() => setShowRest(false)}
+            />
             <WorkoutDoneOverlay visible={isDone} />
           </>
         ) : (
@@ -107,6 +138,29 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
         <>
           <QueuedStrip onReinject={onReinject} />
           <div style={{ padding: '0 24px 36px', display: 'flex', gap: 12, alignItems: 'stretch' }}>
+            {/* Rest timer toggle */}
+            <button
+              onClick={cycleRestDuration}
+              style={{
+                width: 72,
+                background: restDuration ? 'rgba(245,166,35,0.08)' : '#2a2a2a',
+                color: restDuration ? '#f5a623' : '#555',
+                border: `1px solid ${restDuration ? '#f5a623' : '#333'}`,
+                borderRadius: 100,
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 10,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                padding: '20px 0',
+                cursor: 'pointer',
+                userSelect: 'none',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                transition: 'color 0.2s, border-color 0.2s, background 0.2s',
+              }}
+            >
+              <span style={{ fontSize: 16 }}>⏱</span>
+              <span>{restDuration ? `${restDuration}s` : 'off'}</span>
+            </button>
             <button
               onClick={onDone}
               style={{
