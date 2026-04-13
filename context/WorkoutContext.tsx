@@ -443,11 +443,16 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   // ─── TEMPLATE PERSISTENCE ──────────────────────────────────────────
   function scheduleSaveTemplate(routine: Exercise[]) {
     saveRoutine(routine);
+    // Capture the active template ID NOW — before the 800ms delay — so a template
+    // switch or deletion that occurs during the debounce window cannot redirect the
+    // write to the wrong (now-active) template.
+    const id = activeTemplateIdRef.current;
+    if (!id) return;
     if (templateSaveTimer.current) clearTimeout(templateSaveTimer.current);
     templateSaveTimer.current = setTimeout(() => {
-      const id = activeTemplateIdRef.current;
-      if (!id) return;
       const name = templatesRef.current.find(t => t.id === id)?.name ?? 'My Workout';
+      // Guard: skip if the template was deleted while the timer was pending.
+      if (!templatesRef.current.some(t => t.id === id)) return;
       saveTemplate(user.$id, routine, name, id).then(() => {
         applyTemplates(
           templatesRef.current.map(t => t.id === id ? { ...t, exercises: routine } : t)
@@ -516,6 +521,9 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const selectTemplate = useCallback((id: string) => {
     const t = templatesRef.current.find(t => t.id === id);
     if (!t) return;
+    // Cancel any debounced save from the previous template so it doesn't
+    // fire after the switch and overwrite the newly-active template.
+    if (templateSaveTimer.current) { clearTimeout(templateSaveTimer.current); templateSaveTimer.current = null; }
     applyActiveId(id);
     dispatch({ type: 'INIT', routine: t.exercises });
     saveRoutine(t.exercises);
@@ -545,6 +553,9 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   }, [user.$id]);
 
   const deleteTemplate = useCallback(async (id: string) => {
+    // Cancel any in-flight debounced save so it can't land on a different template
+    // after this deletion changes the active template ID.
+    if (templateSaveTimer.current) { clearTimeout(templateSaveTimer.current); templateSaveTimer.current = null; }
     await deleteTemplateDoc(id);
     const remaining = templatesRef.current.filter(t => t.id !== id);
     applyTemplates(remaining);
