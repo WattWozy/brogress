@@ -1,13 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
+import { ProgressionModal } from './ProgressionModal';
 
 interface WorkoutDoneOverlayProps {
   visible: boolean;
 }
 
 export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
-  const { state, resetSession } = useWorkout();
+  const { state, resetSession, progressionSuggestions, applyProgression } = useWorkout();
+  const [showProgression, setShowProgression] = useState(false);
+
+  const hasGains = progressionSuggestions.length > 0;
 
   return (
     <div style={{
@@ -50,21 +55,54 @@ export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
         {state.completedSets} sets across{' '}
         {state.queue.length + state.skipped.length} exercises
       </div>
-      <div style={{
-        marginTop: 20,
-        background: '#1a1a1a',
-        color: '#555',
-        border: '1px solid #333',
-        borderRadius: 100,
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontSize: 20, fontWeight: 900,
-        letterSpacing: '0.05em',
-        textTransform: 'uppercase',
-        padding: '16px 40px',
-        userSelect: 'none',
-      }}>
-        Well done. Now rest
-      </div>
+
+      {hasGains ? (
+        <button
+          onClick={() => setShowProgression(true)}
+          style={{
+            marginTop: 8,
+            background: '#f5a623',
+            color: '#000',
+            border: 'none',
+            borderRadius: 100,
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontSize: 22, fontWeight: 900,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            padding: '18px 40px',
+            cursor: 'pointer',
+          }}
+        >
+          Review gains →
+        </button>
+      ) : (
+        <div style={{
+          marginTop: 8,
+          background: '#1a1a1a',
+          color: '#555',
+          border: '1px solid #333',
+          borderRadius: 100,
+          fontFamily: "'Barlow Condensed', sans-serif",
+          fontSize: 20, fontWeight: 900,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          padding: '16px 40px',
+          userSelect: 'none',
+        }}>
+          Well done. Now rest
+        </div>
+      )}
+
+      {/* Progression review modal — slides in on top */}
+      {showProgression && (
+        <ProgressionModal
+          suggestions={progressionSuggestions}
+          onApply={(accepted) => {
+            applyProgression(accepted);
+            setShowProgression(false);
+          }}
+        />
+      )}
     </div>
   );
 }

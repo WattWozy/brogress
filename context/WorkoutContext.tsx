@@ -4,7 +4,9 @@ import React, {
   createContext, useContext, useReducer, useCallback,
   useEffect, useRef, useState, type Dispatch,
 } from 'react';
+
 import type { Exercise, Feel, QueuedExercise, StoredSet, WorkoutTemplate } from '@/types';
+import { computeProgressionSuggestions, type ProgressionSuggestion } from '@/lib/progression';
 import { DEFAULT_EXERCISES } from '@/lib/defaults';
 import { saveRoutine, loadRoutine } from '@/lib/storage';
 import { useAuth } from '@/context/AuthContext';
@@ -12,6 +14,33 @@ import {
   loadAllTemplates, saveTemplate, deleteTemplate as deleteTemplateDoc,
   createSession, completeSession, persistSessionSets, exerciseId,
 } from '@/lib/appwrite';
+
+// ─── IN-PROGRESS SESSION PERSISTENCE ──────────────────────────────────────────
+const PROGRESS_KEY = 'brogress_session_progress';
+interface PersistedProgress {
+  date: string;
+  sessionId: string;
+  sets: StoredSet[];
+  currentExIdx: number;
+  currentSet: number;
+  completedSets: number;
+}
+function readPersistedProgress(): PersistedProgress | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedProgress;
+    if (parsed.date !== new Date().toISOString().slice(0, 10)) return null;
+    return parsed;
+  } catch { return null; }
+}
+function writePersistedProgress(p: PersistedProgress) {
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch { /* storage full */ }
+}
+function clearPersistedProgress() {
+  try { localStorage.removeItem(PROGRESS_KEY); } catch { /* ignore */ }
+}
 
 const DONE_KEY = 'brogress_session_done';
 function readDoneToday(): boolean {
@@ -25,6 +54,29 @@ function readDoneToday(): boolean {
 function writeDoneToday() {
   try { localStorage.setItem(DONE_KEY, JSON.stringify({ date: new Date().toISOString().slice(0, 10) })); }
   catch { /* storage full */ }
+}
+
+const PROGRESSION_KEY = 'brogress_progression';
+function readStoredProgression(): ProgressionSuggestion[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(PROGRESSION_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (parsed.date !== new Date().toISOString().slice(0, 10)) return [];
+    return parsed.suggestions ?? [];
+  } catch { return []; }
+}
+function writeStoredProgression(suggestions: ProgressionSuggestion[]) {
+  try {
+    localStorage.setItem(PROGRESSION_KEY, JSON.stringify({
+      date: new Date().toISOString().slice(0, 10),
+      suggestions,
+    }));
+  } catch { /* storage full */ }
+}
+function clearStoredProgression() {
+  try { localStorage.removeItem(PROGRESSION_KEY); } catch { /* ignore */ }
 }
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
@@ -52,7 +104,8 @@ export type WorkoutAction =
   | { type: 'ADJUST_WEIGHT'; delta: number }
   | { type: 'SET_WEIGHT'; exId: string; weight: number }
   | { type: 'RESET_SESSION' }
-  | { type: 'SET_PANEL'; panel: number };
+  | { type: 'SET_PANEL'; panel: number }
+  | { type: 'RESTORE_PROGRESS'; currentExIdx: number; currentSet: number; completedSets: number };
 
 function buildQueue(routine: Exercise[]): QueuedExercise[] {
   return routine.map(e => ({ ...e }));
@@ -147,6 +200,14 @@ function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
     case 'SET_PANEL':
       return { ...state, activePanel: action.panel };
 
+    case 'RESTORE_PROGRESS':
+      return {
+        ...state,
+        currentExIdx: action.currentExIdx,
+        currentSet: action.currentSet,
+        completedSets: action.completedSets,
+      };
+
     default: return state;
   }
 }
@@ -179,6 +240,8 @@ interface WorkoutContextValue {
   isWorkoutComplete: boolean;
   isLastSetOfExercise: boolean;
   sessionCompletedToday: boolean;
+  progressionSuggestions: ProgressionSuggestion[];
+  applyProgression: (accepted: ProgressionSuggestion[]) => void;
   // ─── Templates ───
   templates: WorkoutTemplate[];
   activeTemplateId: string | null;
@@ -196,7 +259,9 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   // Session is created on the first set of a workout; its Appwrite $id lives here.
+  // sessionId state mirrors the ref so effects can react when it's first assigned.
   const sessionIdRef = useRef<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const sessionCreateRef = useRef<Promise<string> | null>(null);
 
   // Accumulates every set logged in the current session (source of truth for DB writes).
@@ -209,6 +274,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const templateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [sessionCompletedToday, setSessionCompletedToday] = useState(readDoneToday);
+  const [progressionSuggestions, setProgressionSuggestions] = useState<ProgressionSuggestion[]>(readStoredProgression);
 
   // ─── TEMPLATES ─────────────────────────────────────────────────────
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
@@ -244,6 +310,21 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         applyActiveId(remote[0].id);
         dispatch({ type: 'SET_ROUTINE', routine: remote[0].exercises });
         saveRoutine(remote[0].exercises);
+
+        // Restore any in-progress session from today so a closed browser doesn't
+        // lose workout progress — reuse the existing session document.
+        const progress = readPersistedProgress();
+        if (progress) {
+          sessionIdRef.current = progress.sessionId;
+          setSessionId(progress.sessionId);
+          sessionSetsRef.current = progress.sets;
+          dispatch({
+            type: 'RESTORE_PROGRESS',
+            currentExIdx: progress.currentExIdx,
+            currentSet: progress.currentSet,
+            completedSets: progress.completedSets,
+          });
+        }
       } else {
         // First login — seed Appwrite with the local/default routine.
         const newId = await saveTemplate(user.$id, fallback, 'My Workout');
@@ -271,7 +352,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     if (sessionIdRef.current) return Promise.resolve(sessionIdRef.current);
     if (!sessionCreateRef.current) {
       sessionCreateRef.current = createSession(user.$id, 'My Workout')
-        .then(id => { sessionIdRef.current = id; return id; })
+        .then(id => { sessionIdRef.current = id; setSessionId(id); return id; })
         .catch(e => { sessionCreateRef.current = null; throw e; });
     }
     return sessionCreateRef.current;
@@ -299,10 +380,32 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isWorkoutComplete && sessionIdRef.current) {
       completeSession(sessionIdRef.current);
+      clearPersistedProgress();
       writeDoneToday();
       setSessionCompletedToday(true);
+      const suggestions = computeProgressionSuggestions(state.routine, sessionSetsRef.current);
+      const ready = suggestions.filter(s => s.ready);
+      setProgressionSuggestions(ready);
+      writeStoredProgression(ready);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWorkoutComplete]);
+
+  // ─── PERSIST PROGRESS ─────────────────────────────────────────────
+  // After every set the workout position is saved to localStorage so the
+  // user can resume if they close the browser mid-workout.
+  useEffect(() => {
+    if (!sessionId || sessionSetsRef.current.length === 0) return;
+    writePersistedProgress({
+      date: new Date().toISOString().slice(0, 10),
+      sessionId,
+      sets: sessionSetsRef.current,
+      currentExIdx: state.currentExIdx,
+      currentSet: state.currentSet,
+      completedSets: state.completedSets,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, state.currentExIdx, state.currentSet, state.completedSets]);
 
   // ─── HANDLE DONE ───────────────────────────────────────────────────
   const handleDone = useCallback(() => {
@@ -386,10 +489,28 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   const resetSession = useCallback(() => {
     sessionIdRef.current = null;
+    setSessionId(null);
     sessionCreateRef.current = null;
     sessionSetsRef.current = [];
+    clearPersistedProgress();
+    setProgressionSuggestions([]);
+    clearStoredProgression();
     dispatch({ type: 'RESET_SESSION' });
   }, []);
+
+  const applyProgression = useCallback((accepted: ProgressionSuggestion[]) => {
+    setProgressionSuggestions([]);
+    clearStoredProgression();
+    if (accepted.length === 0) return;
+    const weightMap: Record<string, number> = {};
+    for (const s of accepted) weightMap[s.exerciseName] = s.suggestedWeight;
+    const updated = state.routine.map(e =>
+      weightMap[e.name] !== undefined ? { ...e, weight: weightMap[e.name] } : e
+    );
+    dispatch({ type: 'SET_ROUTINE', routine: updated });
+    scheduleSaveTemplate(updated);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.routine, user.$id]);
 
   // ─── TEMPLATE ACTIONS ──────────────────────────────────────────────
   const selectTemplate = useCallback((id: string) => {
@@ -399,8 +520,10 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'INIT', routine: t.exercises });
     saveRoutine(t.exercises);
     sessionIdRef.current = null;
+    setSessionId(null);
     sessionCreateRef.current = null;
     sessionSetsRef.current = [];
+    clearPersistedProgress();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -450,6 +573,8 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       isWorkoutComplete,
       isLastSetOfExercise,
       sessionCompletedToday,
+      progressionSuggestions,
+      applyProgression,
       templates,
       activeTemplateId,
       activeTemplateName,

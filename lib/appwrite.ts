@@ -233,6 +233,7 @@ export async function loadSessionDates(userId: string): Promise<{ sessionId: str
   try {
     const res = await getDb().listDocuments(AW_DB_ID, COL_SESSIONS, [
       Query.equal('userId', userId),
+      Query.isNotNull('completedAt'),
       Query.orderDesc('date'),
       Query.limit(60),
       Query.select(['$id', 'date']),
