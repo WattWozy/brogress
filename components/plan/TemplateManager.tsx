@@ -6,9 +6,10 @@ import { useWorkout } from '@/context/WorkoutContext';
 interface TemplateManagerProps {
   visible: boolean;
   onClose: () => void;
+  openNew?: boolean;
 }
 
-export function TemplateManager({ visible, onClose }: TemplateManagerProps) {
+export function TemplateManager({ visible, onClose, openNew }: TemplateManagerProps) {
   const {
     templates, activeTemplateId,
     selectTemplate, saveAsNewTemplate, deleteTemplate, renameTemplate,
@@ -23,6 +24,7 @@ export function TemplateManager({ visible, onClose }: TemplateManagerProps) {
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const newInputRef = useRef<HTMLInputElement>(null);
 
   // Focus inputs when they appear
@@ -33,14 +35,17 @@ export function TemplateManager({ visible, onClose }: TemplateManagerProps) {
     if (showNew && newInputRef.current) newInputRef.current.focus();
   }, [showNew]);
 
-  // Reset internal state when sheet closes
+  // Reset internal state when sheet closes; auto-open new form when requested.
   useEffect(() => {
     if (!visible) {
       setRenamingId(null);
       setShowNew(false);
       setNewName('');
+      setSaved(false);
+    } else if (openNew) {
+      setShowNew(true);
     }
-  }, [visible]);
+  }, [visible, openNew]);
 
   function handleLoad(id: string) {
     selectTemplate(id);
@@ -65,11 +70,15 @@ export function TemplateManager({ visible, onClose }: TemplateManagerProps) {
 
   async function handleSaveNew() {
     const name = newName.trim();
-    if (!name || saving) return;
+    if (!name || saving || saved) return;
     setSaving(true);
     await saveAsNewTemplate(name);
     setSaving(false);
-    onClose();
+    setSaved(true);
+    setTimeout(() => {
+      setSaved(false);
+      onClose();
+    }, 900);
   }
 
   return (
@@ -261,22 +270,25 @@ export function TemplateManager({ visible, onClose }: TemplateManagerProps) {
                 />
                 <button
                   onClick={handleSaveNew}
-                  disabled={saving || !newName.trim()}
+                  disabled={saving || saved || !newName.trim()}
                   style={{
-                    background: saving || !newName.trim() ? '#2a2a2a' : '#f5a623',
+                    background: saved ? '#22c55e' : saving || !newName.trim() ? '#2a2a2a' : '#f5a623',
                     border: 'none',
-                    color: saving || !newName.trim() ? '#555' : '#0e0e0e',
-                    fontFamily: "'Barlow Condensed', sans-serif",
-                    fontSize: 18, fontWeight: 900,
+                    color: saved ? '#fff' : saving || !newName.trim() ? '#555' : '#0e0e0e',
+                    fontFamily: saving ? 'sans-serif' : "'Barlow Condensed', sans-serif",
+                    fontSize: saved ? 20 : saving ? 16 : 18,
+                    fontWeight: 900,
                     textTransform: 'uppercase',
                     padding: '10px 20px',
                     borderRadius: 12,
-                    cursor: saving || !newName.trim() ? 'default' : 'pointer',
+                    cursor: saving || saved || !newName.trim() ? 'default' : 'pointer',
                     flexShrink: 0,
-                    transition: 'background 0.15s, color 0.15s',
+                    minWidth: 64,
+                    transition: 'background 0.2s, color 0.2s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >
-                  Save
+                  {saved ? '✓' : saving ? '…' : 'Save'}
                 </button>
               </div>
             ) : (
