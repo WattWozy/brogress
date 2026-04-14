@@ -11,7 +11,7 @@ html, body {
   overflow: hidden;
   background: #0e0e0e;
   color: #f0f0f0;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Nunito', sans-serif;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -35,7 +35,7 @@ a {
   background: transparent;
   color: #f0f0f0;
   font-size: 26px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Raleway', sans-serif;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -47,15 +47,15 @@ a {
 }
 .weight-btn:active {
   background: #2a2a2a;
-  border-color: #f5a623;
-  color: #f5a623;
+  border-color: #f472b6;
+  color: #f472b6;
 }
 
 /* Done button flash */
 @keyframes done-flash {
-  0%   { transform: scale(1); background: #f5a623; }
+  0%   { transform: scale(1); background: #f472b6; }
   30%  { transform: scale(1.06); background: #ffffff; color: #000; }
-  100% { transform: scale(1); background: #f5a623; }
+  100% { transform: scale(1); background: #f472b6; }
 }
 
 /* Plan item shake */

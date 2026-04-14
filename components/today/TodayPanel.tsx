@@ -111,7 +111,7 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{
-              fontFamily: "'Barlow Condensed', sans-serif",
+              fontFamily: "'Raleway', sans-serif",
               fontSize: 'clamp(52px, 14vw, 88px)',
               fontWeight: 900, lineHeight: 0.92,
               letterSpacing: '-0.01em',
@@ -121,7 +121,7 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
               BUILD YOUR<br />PLAN FIRST
             </div>
             <div style={{
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'Nunito', sans-serif",
               fontSize: 11, color: '#444',
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
@@ -143,11 +143,11 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
               onClick={cycleRestDuration}
               style={{
                 width: 72,
-                background: restDuration ? 'rgba(245,166,35,0.08)' : '#2a2a2a',
-                color: restDuration ? '#f5a623' : '#555',
-                border: `1px solid ${restDuration ? '#f5a623' : '#333'}`,
+                background: restDuration ? 'rgba(244,114,182,0.08)' : '#2a2a2a',
+                color: restDuration ? '#f472b6' : '#555',
+                border: `1px solid ${restDuration ? '#f472b6' : '#333'}`,
                 borderRadius: 100,
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: "'Nunito', sans-serif",
                 fontSize: 10,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
@@ -165,11 +165,11 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
               onClick={onDone}
               style={{
                 flex: 1,
-                background: '#f5a623',
+                background: '#f472b6',
                 color: '#000',
                 border: 'none',
                 borderRadius: 100,
-                fontFamily: "'Barlow Condensed', sans-serif",
+                fontFamily: "'Raleway', sans-serif",
                 fontSize: 26, fontWeight: 900,
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
@@ -192,7 +192,7 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
                 color: '#888',
                 border: '1px solid #444',
                 borderRadius: 100,
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: "'Nunito', sans-serif",
                 fontSize: 11,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',

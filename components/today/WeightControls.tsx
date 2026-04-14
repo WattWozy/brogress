@@ -33,7 +33,7 @@ export function WeightControls() {
         −
       </button>
       <div style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
+        fontFamily: "'Raleway', sans-serif",
         fontSize: 'clamp(64px, 18vw, 110px)',
         fontWeight: 800,
         lineHeight: 1,
@@ -44,7 +44,7 @@ export function WeightControls() {
         {ex.weight}
       </div>
       <span style={{
-        fontFamily: "'DM Mono', monospace",
+        fontFamily: "'Nunito', sans-serif",
         fontSize: 13,
         color: '#888',
         alignSelf: 'flex-end',

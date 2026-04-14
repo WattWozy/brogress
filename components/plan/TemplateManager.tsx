@@ -125,7 +125,7 @@ export function TemplateManager({ visible, onClose, openNew }: TemplateManagerPr
         {/* Title */}
         <div style={{
           padding: '12px 24px 16px',
-          fontFamily: "'Barlow Condensed', sans-serif",
+          fontFamily: "'Raleway', sans-serif",
           fontSize: 28, fontWeight: 900,
           textTransform: 'uppercase', color: '#f0f0f0',
           flexShrink: 0,
@@ -155,7 +155,7 @@ export function TemplateManager({ visible, onClose, openNew }: TemplateManagerPr
                 <div style={{
                   width: 6, height: 6,
                   borderRadius: '50%',
-                  background: isActive ? '#f5a623' : 'transparent',
+                  background: isActive ? '#f472b6' : 'transparent',
                   flexShrink: 0,
                   alignSelf: 'flex-start',
                   marginTop: 8,
@@ -179,9 +179,9 @@ export function TemplateManager({ visible, onClose, openNew }: TemplateManagerPr
                       onClick={e => e.stopPropagation()}
                       style={{
                         background: '#2a2a2a',
-                        border: '1px solid #f5a623',
+                        border: '1px solid #f472b6',
                         color: '#f0f0f0',
-                        fontFamily: "'Barlow Condensed', sans-serif",
+                        fontFamily: "'Raleway', sans-serif",
                         fontSize: 22, fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.02em',
@@ -194,10 +194,10 @@ export function TemplateManager({ visible, onClose, openNew }: TemplateManagerPr
                     />
                   ) : (
                     <div style={{
-                      fontFamily: "'Barlow Condensed', sans-serif",
+                      fontFamily: "'Raleway', sans-serif",
                       fontSize: 22, fontWeight: 700,
                       textTransform: 'uppercase',
-                      color: isActive ? '#f5a623' : '#f0f0f0',
+                      color: isActive ? '#f472b6' : '#f0f0f0',
                       letterSpacing: '0.02em',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
@@ -207,7 +207,7 @@ export function TemplateManager({ visible, onClose, openNew }: TemplateManagerPr
                     </div>
                   )}
                   <div style={{
-                    fontFamily: "'DM Mono', monospace",
+                    fontFamily: "'Nunito', sans-serif",
                     fontSize: 9, color: '#555',
                     letterSpacing: '0.06em',
                     marginTop: 3,
@@ -258,7 +258,7 @@ export function TemplateManager({ visible, onClose, openNew }: TemplateManagerPr
                     background: '#2a2a2a',
                     border: '1px solid #444',
                     color: '#f0f0f0',
-                    fontFamily: "'Barlow Condensed', sans-serif",
+                    fontFamily: "'Raleway', sans-serif",
                     fontSize: 22, fontWeight: 700,
                     textTransform: 'uppercase',
                     letterSpacing: '0.02em',
@@ -272,10 +272,10 @@ export function TemplateManager({ visible, onClose, openNew }: TemplateManagerPr
                   onClick={handleSaveNew}
                   disabled={saving || saved || !newName.trim()}
                   style={{
-                    background: saved ? '#22c55e' : saving || !newName.trim() ? '#2a2a2a' : '#f5a623',
+                    background: saved ? '#22c55e' : saving || !newName.trim() ? '#2a2a2a' : '#f472b6',
                     border: 'none',
                     color: saved ? '#fff' : saving || !newName.trim() ? '#555' : '#0e0e0e',
-                    fontFamily: saving ? 'sans-serif' : "'Barlow Condensed', sans-serif",
+                    fontFamily: saving ? 'sans-serif' : "'Raleway', sans-serif",
                     fontSize: saved ? 20 : saving ? 16 : 18,
                     fontWeight: 900,
                     textTransform: 'uppercase',
@@ -301,7 +301,7 @@ export function TemplateManager({ visible, onClose, openNew }: TemplateManagerPr
                   borderRadius: 14,
                   background: 'transparent',
                   color: '#555',
-                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontFamily: "'Raleway', sans-serif",
                   fontSize: 20, fontWeight: 700,
                   letterSpacing: '0.05em',
                   textTransform: 'uppercase',
@@ -311,8 +311,8 @@ export function TemplateManager({ visible, onClose, openNew }: TemplateManagerPr
                   transition: 'border-color 0.15s, color 0.15s',
                 }}
                 onPointerDown={e => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#f5a623';
-                  (e.currentTarget as HTMLButtonElement).style.color = '#f5a623';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#f472b6';
+                  (e.currentTarget as HTMLButtonElement).style.color = '#f472b6';
                 }}
                 onPointerUp={e => {
                   (e.currentTarget as HTMLButtonElement).style.borderColor = '#333';

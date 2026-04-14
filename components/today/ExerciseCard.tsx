@@ -54,7 +54,7 @@ export function ExerciseCard({ onFeelRequired, feel }: ExerciseCardProps) {
     >
       {/* Exercise name */}
       <div style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
+        fontFamily: "'Raleway', sans-serif",
         fontSize: 'clamp(52px, 14vw, 88px)',
         fontWeight: 900,
         lineHeight: 0.92,
@@ -69,14 +69,14 @@ export function ExerciseCard({ onFeelRequired, feel }: ExerciseCardProps) {
 
       {/* Set info */}
       <div style={{
-        fontFamily: "'DM Mono', monospace",
+        fontFamily: "'Nunito', sans-serif",
         fontSize: 13,
         letterSpacing: '0.12em',
         color: '#888',
         textTransform: 'uppercase',
         marginBottom: 32,
       }}>
-        <span style={{ color: '#f5a623' }}>SET {state.currentSet}</span>
+        <span style={{ color: '#f472b6' }}>SET {state.currentSet}</span>
         {' / '}
         {ex.sets}
         <span style={{ marginLeft: 16 }}>×</span>
@@ -88,7 +88,7 @@ export function ExerciseCard({ onFeelRequired, feel }: ExerciseCardProps) {
 
       {/* Weight recommendation */}
       <div style={{
-        fontFamily: "'DM Mono', monospace",
+        fontFamily: "'Nunito', sans-serif",
         fontSize: 11,
         color: '#444',
         letterSpacing: '0.08em',

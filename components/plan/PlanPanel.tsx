@@ -40,7 +40,7 @@ export function PlanPanel({ onShowToast, planReady }: PlanPanelProps) {
       <div style={{ padding: '52px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div>
           <div style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: "'Raleway', sans-serif",
             fontSize: 32, fontWeight: 900,
             textTransform: 'uppercase', color: '#f0f0f0',
           }}>
@@ -53,8 +53,8 @@ export function PlanPanel({ onShowToast, planReady }: PlanPanelProps) {
                 style={{
                   background: 'none', border: 'none', padding: '2px 0',
                   cursor: 'pointer',
-                  fontFamily: "'DM Mono', monospace",
-                  fontSize: 10, color: '#f5a623',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontSize: 10, color: '#f472b6',
                   letterSpacing: '0.1em', textTransform: 'uppercase',
                   display: 'flex', alignItems: 'center', gap: 4,
                   opacity: 1,
@@ -69,9 +69,9 @@ export function PlanPanel({ onShowToast, planReady }: PlanPanelProps) {
               </button>
               {!planReady && (
                 <div style={{
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: "'Nunito', sans-serif",
                   fontSize: 9, letterSpacing: '0.1em',
-                  color: '#f5a623', textTransform: 'uppercase',
+                  color: '#f472b6', textTransform: 'uppercase',
                   marginTop: 6,
                   display: 'flex', alignItems: 'center', gap: 5,
                   animation: 'hint-blink 2s ease-in-out infinite',
@@ -87,10 +87,10 @@ export function PlanPanel({ onShowToast, planReady }: PlanPanelProps) {
           style={{
             background: 'none', border: 'none', padding: 0,
             cursor: 'pointer',
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "'Nunito', sans-serif",
             fontSize: 10,
             letterSpacing: '0.1em', textTransform: 'uppercase',
-            color: hasExerciseChanges ? '#f5a623' : '#888',
+            color: hasExerciseChanges ? '#f472b6' : '#888',
             transition: 'color 0.2s',
             display: 'flex', alignItems: 'center', gap: 5,
           }}
@@ -127,7 +127,7 @@ export function PlanPanel({ onShowToast, planReady }: PlanPanelProps) {
             borderRadius: 16,
             background: 'transparent',
             color: '#888',
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: "'Raleway', sans-serif",
             fontSize: 22, fontWeight: 700,
             letterSpacing: '0.05em',
             textTransform: 'uppercase',

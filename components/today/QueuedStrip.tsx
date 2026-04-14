@@ -22,7 +22,7 @@ export function QueuedStrip({ onReinject }: QueuedStripProps) {
           key={ex.id + i}
           onClick={() => onReinject(i)}
           style={{
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "'Nunito', sans-serif",
             fontSize: 10,
             color: '#444',
             border: '1px solid #2a2a2a',

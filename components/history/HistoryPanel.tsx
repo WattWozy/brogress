@@ -58,14 +58,14 @@ export function HistoryPanel() {
       {/* Header */}
       <div style={{ padding: '52px 24px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
+          fontFamily: "'Raleway', sans-serif",
           fontSize: 32, fontWeight: 900,
           textTransform: 'uppercase', color: '#f0f0f0',
         }}>
           History
         </div>
         <div style={{
-          fontFamily: "'DM Mono', monospace",
+          fontFamily: "'Nunito', sans-serif",
           fontSize: 10, color: '#888',
           letterSpacing: '0.1em', textTransform: 'uppercase',
         }}>

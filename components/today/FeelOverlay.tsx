@@ -26,7 +26,7 @@ export function FeelOverlay({ visible, onSelect }: FeelOverlayProps) {
       transition: 'opacity 0.2s',
     }}>
       <div style={{
-        fontFamily: "'DM Mono', monospace",
+        fontFamily: "'Nunito', sans-serif",
         fontSize: 11,
         letterSpacing: '0.14em',
         color: '#888',
@@ -53,7 +53,7 @@ export function FeelOverlay({ visible, onSelect }: FeelOverlayProps) {
           >
             <span style={{ fontSize: 32, lineHeight: 1 }}>{o.emoji}</span>
             <span style={{
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'Nunito', sans-serif",
               fontSize: 9,
               color: '#888',
               letterSpacing: '0.08em',

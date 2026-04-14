@@ -48,31 +48,31 @@ export function CalendarStrip({ historyDates, selectedDate, onSelectDate }: Cale
             padding: '8px 10px',
             borderRadius: 12,
             border: `1px solid ${
-              d.date === selectedDate ? '#f5a623' :
+              d.date === selectedDate ? '#f472b6' :
               d.hasSession ? '#444' : 'transparent'
             }`,
-            background: d.date === selectedDate ? 'rgba(245,166,35,0.08)' : 'transparent',
+            background: d.date === selectedDate ? 'rgba(244,114,182,0.08)' : 'transparent',
             minWidth: 44,
           }}
         >
           <div style={{
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "'Nunito', sans-serif",
             fontSize: 9, color: '#888',
             letterSpacing: '0.08em', textTransform: 'uppercase',
           }}>
             {d.dayName}
           </div>
           <div style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: "'Raleway', sans-serif",
             fontSize: 20, fontWeight: 700,
-            color: d.hasSession ? '#f5a623' : '#f0f0f0',
+            color: d.hasSession ? '#f472b6' : '#f0f0f0',
           }}>
             {d.dayNum}
           </div>
           <div style={{
             width: 4, height: 4,
             borderRadius: '50%',
-            background: d.hasSession ? '#f5a623' : '#444',
+            background: d.hasSession ? '#f472b6' : '#444',
           }} />
         </div>
       ))}

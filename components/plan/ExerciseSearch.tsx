@@ -61,7 +61,7 @@ export function ExerciseSearch({ visible, onClose, onAdded }: ExerciseSearchProp
             background: '#2a2a2a',
             border: '1px solid #444',
             color: '#f0f0f0',
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "'Nunito', sans-serif",
             fontSize: 15,
             padding: '12px 16px',
             borderRadius: 12,
@@ -77,10 +77,10 @@ export function ExerciseSearch({ visible, onClose, onAdded }: ExerciseSearchProp
             style={{
               padding: '16px 0',
               borderBottom: '1px solid #2a2a2a',
-              fontFamily: "'Barlow Condensed', sans-serif",
+              fontFamily: "'Raleway', sans-serif",
               fontSize: 20, fontWeight: 700,
               textTransform: 'uppercase',
-              color: '#f5a623',
+              color: '#f472b6',
               cursor: 'pointer',
               letterSpacing: '0.02em',
             }}
@@ -95,7 +95,7 @@ export function ExerciseSearch({ visible, onClose, onAdded }: ExerciseSearchProp
             style={{
               padding: '16px 0',
               borderBottom: '1px solid #2a2a2a',
-              fontFamily: "'Barlow Condensed', sans-serif",
+              fontFamily: "'Raleway', sans-serif",
               fontSize: 20, fontWeight: 700,
               textTransform: 'uppercase',
               color: '#f0f0f0',

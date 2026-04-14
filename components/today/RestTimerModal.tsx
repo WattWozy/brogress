@@ -54,7 +54,7 @@ export function RestTimerModal({ visible, duration, onDismiss }: RestTimerModalP
       }}
     >
       <div style={{
-        fontFamily: "'DM Mono', monospace",
+        fontFamily: "'Nunito', sans-serif",
         fontSize: 11,
         letterSpacing: '0.14em',
         color: '#888',
@@ -69,7 +69,7 @@ export function RestTimerModal({ visible, duration, onDismiss }: RestTimerModalP
           <circle cx="68" cy="68" r={radius} fill="none" stroke="#1e1e1e" strokeWidth="5" />
           <circle
             cx="68" cy="68" r={radius} fill="none"
-            stroke="#f5a623" strokeWidth="5"
+            stroke="#f472b6" strokeWidth="5"
             strokeDasharray={`${dash} ${circumference}`}
             strokeLinecap="round"
             style={{ transition: 'stroke-dasharray 0.85s linear' }}
@@ -78,7 +78,7 @@ export function RestTimerModal({ visible, duration, onDismiss }: RestTimerModalP
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: "'Barlow Condensed', sans-serif",
+          fontFamily: "'Raleway', sans-serif",
           fontSize: 56, fontWeight: 900,
           color: '#f0f0f0',
           letterSpacing: '-0.02em',
@@ -88,7 +88,7 @@ export function RestTimerModal({ visible, duration, onDismiss }: RestTimerModalP
       </div>
 
       <div style={{
-        fontFamily: "'DM Mono', monospace",
+        fontFamily: "'Nunito', sans-serif",
         fontSize: 10,
         letterSpacing: '0.12em',
         color: '#444',

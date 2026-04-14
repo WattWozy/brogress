@@ -91,11 +91,11 @@ export function Viewport() {
             pointerEvents: 'none',
             animation: 'hint-pulse 2s ease-in-out infinite',
           }}>
-            <span style={{ fontSize: 22, color: '#f5a623' }}>←</span>
+            <span style={{ fontSize: 22, color: '#f472b6' }}>←</span>
             <span style={{
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'Nunito', sans-serif",
               fontSize: 9, letterSpacing: '0.12em',
-              color: '#f5a623', textTransform: 'uppercase',
+              color: '#f472b6', textTransform: 'uppercase',
               writingMode: 'vertical-rl', transform: 'rotate(180deg)',
             }}>Plan</span>
           </div>
@@ -112,7 +112,7 @@ export function Viewport() {
           }}>
             <span style={{ fontSize: 22, color: '#888' }}>→</span>
             <span style={{
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'Nunito', sans-serif",
               fontSize: 9, letterSpacing: '0.12em',
               color: '#888', textTransform: 'uppercase',
               writingMode: 'vertical-rl',

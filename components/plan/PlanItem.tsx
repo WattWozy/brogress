@@ -66,7 +66,7 @@ export function PlanItem({ ex, idx, total, onDelete, onMoveUp, onMoveDown }: Pla
           onClick={() => setOpen(o => !o)}
         >
           <div style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: "'Raleway', sans-serif",
             fontSize: 22, fontWeight: 700,
             textTransform: 'uppercase',
             color: '#f0f0f0',
@@ -75,7 +75,7 @@ export function PlanItem({ ex, idx, total, onDelete, onMoveUp, onMoveDown }: Pla
             {ex.name}
           </div>
           <div style={{
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "'Nunito', sans-serif",
             fontSize: 10,
             color: '#888',
             letterSpacing: '0.08em',
@@ -113,7 +113,7 @@ export function PlanItem({ ex, idx, total, onDelete, onMoveUp, onMoveDown }: Pla
           {(['sets', 'reps', 'weight'] as const).map(field => (
             <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: "'Nunito', sans-serif",
                 fontSize: 9, color: '#888',
                 letterSpacing: '0.1em', textTransform: 'uppercase',
               }}>
@@ -133,7 +133,7 @@ export function PlanItem({ ex, idx, total, onDelete, onMoveUp, onMoveDown }: Pla
                   background: '#2a2a2a',
                   border: '1px solid #444',
                   color: '#f0f0f0',
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: "'Nunito', sans-serif",
                   fontSize: 15,
                   padding: '8px 12px',
                   borderRadius: 8,

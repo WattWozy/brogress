@@ -12,7 +12,7 @@ export function ProgressBar({ completed, total }: ProgressBarProps) {
       <div
         style={{
           height: '100%',
-          background: '#f5a623',
+          background: '#f472b6',
           width: `${pct}%`,
           transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)',
         }}

@@ -37,7 +37,7 @@ export function LoginModal({ onLogin, onRegister }: Props) {
       position: 'fixed', inset: 0,
       background: '#0e0e0e',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: "'DM Mono', monospace",
+      fontFamily: "'Nunito', sans-serif",
     }}>
       <div style={{
         width: '100%', maxWidth: 360,
@@ -46,9 +46,9 @@ export function LoginModal({ onLogin, onRegister }: Props) {
       }}>
         <div>
           <div style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: "'Raleway', sans-serif",
             fontWeight: 900, fontSize: 36,
-            color: '#f5a623', letterSpacing: 1,
+            color: '#f472b6', letterSpacing: 1,
             marginBottom: 4,
           }}>
             BROGRESS
@@ -89,11 +89,11 @@ export function LoginModal({ onLogin, onRegister }: Props) {
             style={{
               marginTop: 4,
               height: 48,
-              background: loading ? '#333' : '#f5a623',
+              background: loading ? '#333' : '#f472b6',
               color: loading ? '#666' : '#000',
               border: 'none',
               borderRadius: 4,
-              fontFamily: "'Barlow Condensed', sans-serif",
+              fontFamily: "'Raleway', sans-serif",
               fontWeight: 800, fontSize: 18,
               letterSpacing: 1,
               cursor: loading ? 'default' : 'pointer',
@@ -126,7 +126,7 @@ const inputStyle: React.CSSProperties = {
   border: '1px solid #2a2a2a',
   borderRadius: 4,
   color: '#f0f0f0',
-  fontFamily: "'DM Mono', monospace",
+  fontFamily: "'Nunito', sans-serif",
   fontSize: 14,
   padding: '0 14px',
   outline: 'none',

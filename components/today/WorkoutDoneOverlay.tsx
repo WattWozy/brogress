@@ -26,10 +26,10 @@ export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
       transition: 'opacity 0.3s',
     }}>
       <div style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
+        fontFamily: "'Raleway', sans-serif",
         fontSize: 96, fontWeight: 900,
         textTransform: 'uppercase',
-        color: '#f5a623',
+        color: '#f472b6',
         lineHeight: 0.9,
         textAlign: 'center',
         letterSpacing: '-0.02em',
@@ -37,7 +37,7 @@ export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
         Session<br />Done
       </div>
       <div style={{
-        fontFamily: "'DM Mono', monospace",
+        fontFamily: "'Nunito', sans-serif",
         fontSize: 11,
         color: '#888',
         letterSpacing: '0.14em',
@@ -46,7 +46,7 @@ export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
         That&apos;s a wrap
       </div>
       <div style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
+        fontFamily: "'Raleway', sans-serif",
         fontSize: 20,
         color: '#888',
         textAlign: 'center',
@@ -61,11 +61,11 @@ export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
           onClick={() => setShowProgression(true)}
           style={{
             marginTop: 8,
-            background: '#f5a623',
+            background: '#f472b6',
             color: '#000',
             border: 'none',
             borderRadius: 100,
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: "'Raleway', sans-serif",
             fontSize: 22, fontWeight: 900,
             letterSpacing: '0.05em',
             textTransform: 'uppercase',
@@ -82,7 +82,7 @@ export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
           color: '#555',
           border: '1px solid #333',
           borderRadius: 100,
-          fontFamily: "'Barlow Condensed', sans-serif",
+          fontFamily: "'Raleway', sans-serif",
           fontSize: 20, fontWeight: 900,
           letterSpacing: '0.05em',
           textTransform: 'uppercase',

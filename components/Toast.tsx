@@ -16,7 +16,7 @@ export function Toast({ message, visible }: ToastProps) {
         background: '#1e1e1e',
         border: '1px solid #444',
         color: '#888',
-        fontFamily: "'DM Mono', monospace",
+        fontFamily: "'Nunito', sans-serif",
         fontSize: 10,
         letterSpacing: '0.1em',
         textTransform: 'uppercase',

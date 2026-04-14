@@ -32,10 +32,10 @@ export function ProgressionModal({ suggestions, onApply }: ProgressionModalProps
     }}>
       {/* Header */}
       <div style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
+        fontFamily: "'Raleway', sans-serif",
         fontSize: 'clamp(52px, 14vw, 80px)',
         fontWeight: 900,
-        color: '#f5a623',
+        color: '#f472b6',
         lineHeight: 0.88,
         textTransform: 'uppercase',
         letterSpacing: '-0.01em',
@@ -43,7 +43,7 @@ export function ProgressionModal({ suggestions, onApply }: ProgressionModalProps
         Level<br />Up
       </div>
       <div style={{
-        fontFamily: "'DM Mono', monospace",
+        fontFamily: "'Nunito', sans-serif",
         fontSize: 11,
         color: '#555',
         letterSpacing: '0.14em',
@@ -76,7 +76,7 @@ export function ProgressionModal({ suggestions, onApply }: ProgressionModalProps
             >
               <div style={{ minWidth: 0 }}>
                 <div style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontFamily: "'Raleway', sans-serif",
                   fontSize: 20,
                   fontWeight: 700,
                   color: '#eee',
@@ -89,14 +89,14 @@ export function ProgressionModal({ suggestions, onApply }: ProgressionModalProps
                   {s.exerciseName}
                 </div>
                 <div style={{
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: "'Nunito', sans-serif",
                   fontSize: 11,
                   color: '#666',
                   marginTop: 3,
                 }}>
                   {s.currentWeight} kg{' '}
                   <span style={{ color: '#444' }}>→</span>{' '}
-                  <span style={{ color: isSkipped ? '#555' : '#f5a623' }}>{s.suggestedWeight} kg</span>
+                  <span style={{ color: isSkipped ? '#555' : '#f472b6' }}>{s.suggestedWeight} kg</span>
                 </div>
               </div>
 
@@ -104,11 +104,11 @@ export function ProgressionModal({ suggestions, onApply }: ProgressionModalProps
                 onClick={() => toggle(s.exerciseName)}
                 style={{
                   flexShrink: 0,
-                  background: isSkipped ? 'transparent' : '#f5a62322',
-                  color: isSkipped ? '#444' : '#f5a623',
-                  border: `1px solid ${isSkipped ? '#333' : '#f5a62366'}`,
+                  background: isSkipped ? 'transparent' : 'rgba(244,114,182,0.13)',
+                  color: isSkipped ? '#444' : '#f472b6',
+                  border: `1px solid ${isSkipped ? '#333' : 'rgba(244,114,182,0.4)'}`,
                   borderRadius: 100,
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: "'Nunito', sans-serif",
                   fontSize: 10,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
@@ -129,11 +129,11 @@ export function ProgressionModal({ suggestions, onApply }: ProgressionModalProps
         onClick={() => onApply(accepted)}
         style={{
           marginTop: 28,
-          background: accepted.length > 0 ? '#f5a623' : '#1a1a1a',
+          background: accepted.length > 0 ? '#f472b6' : '#1a1a1a',
           color: accepted.length > 0 ? '#000' : '#555',
           border: accepted.length > 0 ? 'none' : '1px solid #333',
           borderRadius: 100,
-          fontFamily: "'Barlow Condensed', sans-serif",
+          fontFamily: "'Raleway', sans-serif",
           fontSize: 26,
           fontWeight: 900,
           letterSpacing: '0.04em',
