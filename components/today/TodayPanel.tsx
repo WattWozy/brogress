@@ -7,6 +7,7 @@ import { ExerciseCard } from './ExerciseCard';
 import { FeelOverlay } from './FeelOverlay';
 import { RestTimerModal } from './RestTimerModal';
 import { WorkoutDoneOverlay } from './WorkoutDoneOverlay';
+import { ClassDoneModal } from './ClassDoneModal';
 import { QueuedStrip } from './QueuedStrip';
 import type { Feel } from '@/types';
 
@@ -21,6 +22,7 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
   const { state, dispatch, handleDone, handleSkip, handleSetFeel, isWorkoutComplete, isLastSetOfExercise, sessionCompletedToday } = useWorkout();
   const isDone = isWorkoutComplete || sessionCompletedToday;
   const [showFeel, setShowFeel] = useState(false);
+  const [showClassDone, setShowClassDone] = useState(false);
   const [doneBtnFlash, setDoneBtnFlash] = useState(false);
   const [showRest, setShowRest] = useState(false);
   const [restDuration, setRestDuration] = useState<number | null>(() => {
@@ -54,6 +56,12 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
   }, []);
 
   const onDone = useCallback(() => {
+    if (!currentEx) return;
+    // Class exercises get their own confirm → celebrate flow
+    if (currentEx.type === 'class' || currentEx.reps === 0) {
+      setShowClassDone(true);
+      return;
+    }
     setDoneBtnFlash(true);
     setTimeout(() => setDoneBtnFlash(false), 400);
     if (isLastSetOfExercise) {
@@ -63,7 +71,12 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
       handleDone();
       if (restDuration) setShowRest(true);
     }
-  }, [handleDone, isLastSetOfExercise, restDuration]);
+  }, [currentEx, handleDone, isLastSetOfExercise, restDuration]);
+
+  const onClassConfirmed = useCallback(() => {
+    handleDone();
+    dispatch({ type: 'ADVANCE_EXERCISE' });
+  }, [handleDone, dispatch]);
 
   const onSkip = useCallback(() => {
     if (!currentEx) return;
@@ -105,6 +118,12 @@ export function TodayPanel({ onShowToast, planReady }: TodayPanelProps) {
               visible={showRest}
               duration={restDuration ?? 90}
               onDismiss={() => setShowRest(false)}
+            />
+            <ClassDoneModal
+              visible={showClassDone}
+              exerciseName={currentEx?.name ?? ''}
+              onConfirm={onClassConfirmed}
+              onDismiss={() => setShowClassDone(false)}
             />
             <WorkoutDoneOverlay visible={isDone} />
           </>

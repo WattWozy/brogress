@@ -81,7 +81,9 @@ export function PlanItem({ ex, idx, total, onDelete, onMoveUp, onMoveDown }: Pla
             letterSpacing: '0.08em',
             marginTop: 2,
           }}>
-            {ex.sets} × {ex.reps} &nbsp;·&nbsp; {ex.weight} kg
+            {ex.type === 'class' || ex.reps === 0
+              ? '1 pass · no equipment'
+              : `${ex.sets} × ${ex.reps} · ${ex.weight} kg`}
           </div>
         </div>
 
@@ -107,8 +109,8 @@ export function PlanItem({ ex, idx, total, onDelete, onMoveUp, onMoveDown }: Pla
         </button>
       </div>
 
-      {/* Inline editor */}
-      {open && (
+      {/* Inline editor — hidden for class exercises */}
+      {open && ex.type !== 'class' && ex.reps !== 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, paddingTop: 16 }}>
           {(['sets', 'reps', 'weight'] as const).map(field => (
             <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

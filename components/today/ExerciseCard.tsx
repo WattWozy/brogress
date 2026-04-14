@@ -43,6 +43,8 @@ export function ExerciseCard({ onFeelRequired, feel }: ExerciseCardProps) {
 
   if (!ex) return null;
 
+  const isClass = ex.type === 'class' || ex.reps === 0;
+
   return (
     <div
       ref={cardRef}
@@ -67,36 +69,60 @@ export function ExerciseCard({ onFeelRequired, feel }: ExerciseCardProps) {
         {ex.name}
       </div>
 
-      {/* Set info */}
-      <div style={{
-        fontFamily: "'Nunito', sans-serif",
-        fontSize: 13,
-        letterSpacing: '0.12em',
-        color: '#888',
-        textTransform: 'uppercase',
-        marginBottom: 32,
-      }}>
-        <span style={{ color: '#f472b6' }}>SET {state.currentSet}</span>
-        {' / '}
-        {ex.sets}
-        <span style={{ marginLeft: 16 }}>×</span>
-        <span style={{ marginLeft: 4 }}>{ex.reps}</span>
-      </div>
+      {isClass ? (
+        /* Class: just show the "1 pass" badge, no weight */
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          marginBottom: 56,
+        }}>
+          <span style={{
+            background: 'rgba(244,114,182,0.12)',
+            border: '1px solid rgba(244,114,182,0.3)',
+            color: '#f472b6',
+            borderRadius: 100,
+            fontFamily: "'Nunito', sans-serif",
+            fontSize: 11, fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            padding: '5px 14px',
+          }}>
+            Class · 1 pass
+          </span>
+        </div>
+      ) : (
+        <>
+          {/* Set info */}
+          <div style={{
+            fontFamily: "'Nunito', sans-serif",
+            fontSize: 13,
+            letterSpacing: '0.12em',
+            color: '#888',
+            textTransform: 'uppercase',
+            marginBottom: 32,
+          }}>
+            <span style={{ color: '#f472b6' }}>SET {state.currentSet}</span>
+            {' / '}
+            {ex.sets}
+            <span style={{ marginLeft: 16 }}>×</span>
+            <span style={{ marginLeft: 4 }}>{ex.reps}</span>
+          </div>
 
-      {/* Weight */}
-      <WeightControls />
+          {/* Weight */}
+          <WeightControls />
 
-      {/* Weight recommendation */}
-      <div style={{
-        fontFamily: "'Nunito', sans-serif",
-        fontSize: 11,
-        color: '#444',
-        letterSpacing: '0.08em',
-        minHeight: 16,
-        marginBottom: 32,
-      }}>
-        {weightRec}
-      </div>
+          {/* Weight recommendation */}
+          <div style={{
+            fontFamily: "'Nunito', sans-serif",
+            fontSize: 11,
+            color: '#444',
+            letterSpacing: '0.08em',
+            minHeight: 16,
+            marginBottom: 32,
+          }}>
+            {weightRec}
+          </div>
+        </>
+      )}
     </div>
   );
 }

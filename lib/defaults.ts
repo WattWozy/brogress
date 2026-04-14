@@ -32,3 +32,14 @@ export const EXERCISE_LIBRARY: string[] = [
   'Lateral Raise', 'Face Pull', 'Seated Row', 'Lat Pulldown', 'Pull-Up',
   'Dumbbell Curl', 'Tricep Pushdown',
 ];
+
+export const CLASS_LIBRARY: string[] = [
+  'Pilates', 'Reformer Pilates', 'Mat Pilates',
+  'Yoga', 'Hot Yoga', 'Aerial Yoga',
+  'Vinyasa (flow)', 'Hatha (gentle)', 'Ashtanga (structured)', 'Iyengar (alignment-based)', 'Yin (passive)', 'Restorative (relaxed)',
+  'Spinning', 'Cycling Class',
+  'Zumba', 'Dance Cardio',
+  'HIIT Class', 'Circuit Class', 'Bootcamp',
+  'Kickboxing', 'Boxing Class',
+  'Barre', 'Body Pump', 'CrossFit',
+];

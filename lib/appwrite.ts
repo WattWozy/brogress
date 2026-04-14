@@ -58,6 +58,7 @@ function docToTemplate(doc: Record<string, unknown>): WorkoutTemplate {
       sets:   sets[i],
       reps:   reps[i],
       weight: weights[i],
+      ...(reps[i] === 0 ? { type: 'class' as const } : {}),
     })),
   };
 }

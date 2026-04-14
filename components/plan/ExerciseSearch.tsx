@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { EXERCISE_LIBRARY } from '@/lib/defaults';
+import { EXERCISE_LIBRARY, CLASS_LIBRARY } from '@/lib/defaults';
 import { useWorkout } from '@/context/WorkoutContext';
 import type { Exercise } from '@/types';
 import { exerciseId } from '@/lib/appwrite';
@@ -16,15 +16,27 @@ export function ExerciseSearch({ visible, onClose, onAdded }: ExerciseSearchProp
   const { addExercise, state } = useWorkout();
   const [query, setQuery] = useState('');
 
+  const allNames = [...EXERCISE_LIBRARY, ...CLASS_LIBRARY];
   const filtered = query
-    ? EXERCISE_LIBRARY.filter(n => n.toLowerCase().includes(query.toLowerCase()))
+    ? allNames.filter(n => n.toLowerCase().includes(query.toLowerCase()))
     : EXERCISE_LIBRARY;
+  const filteredClasses = query
+    ? [] // merged into filtered when searching
+    : CLASS_LIBRARY;
 
   const showCustom = query.length > 0 &&
-    !EXERCISE_LIBRARY.some(n => n.toLowerCase() === query.toLowerCase());
+    !allNames.some(n => n.toLowerCase() === query.toLowerCase());
 
   function handleAdd(name: string) {
     const ex: Exercise = { id: exerciseId(name), name, sets: 3, reps: 10, weight: 20 };
+    addExercise(ex);
+    setQuery('');
+    onClose();
+    onAdded(name);
+  }
+
+  function handleAddClass(name: string) {
+    const ex: Exercise = { id: exerciseId(name), name, sets: 1, reps: 0, weight: 0, type: 'class' };
     addExercise(ex);
     setQuery('');
     onClose();
@@ -88,24 +100,85 @@ export function ExerciseSearch({ visible, onClose, onAdded }: ExerciseSearchProp
             + Add &quot;{query}&quot;
           </div>
         )}
-        {filtered.map(name => (
-          <div
-            key={name}
-            onClick={() => handleAdd(name)}
-            style={{
-              padding: '16px 0',
-              borderBottom: '1px solid #2a2a2a',
-              fontFamily: "'Raleway', sans-serif",
-              fontSize: 20, fontWeight: 700,
-              textTransform: 'uppercase',
-              color: '#f0f0f0',
-              cursor: 'pointer',
-              letterSpacing: '0.02em',
-            }}
-          >
-            {name}
-          </div>
-        ))}
+        {filtered.map(name => {
+          const isClass = CLASS_LIBRARY.includes(name);
+          return (
+            <div
+              key={name}
+              onClick={() => isClass ? handleAddClass(name) : handleAdd(name)}
+              style={{
+                padding: '16px 0',
+                borderBottom: '1px solid #2a2a2a',
+                fontFamily: "'Raleway', sans-serif",
+                fontSize: 20, fontWeight: 700,
+                textTransform: 'uppercase',
+                color: '#f0f0f0',
+                cursor: 'pointer',
+                letterSpacing: '0.02em',
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}
+            >
+              {name}
+              {isClass && (
+                <span style={{
+                  fontSize: 10, fontWeight: 700,
+                  fontFamily: "'Nunito', sans-serif",
+                  color: '#f472b6',
+                  background: 'rgba(244,114,182,0.12)',
+                  border: '1px solid rgba(244,114,182,0.25)',
+                  borderRadius: 100,
+                  padding: '2px 8px',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}>class</span>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Classes section (only shown when not searching) */}
+        {filteredClasses.length > 0 && (
+          <>
+            <div style={{
+              fontFamily: "'Nunito', sans-serif",
+              fontSize: 10, color: '#555',
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              padding: '20px 0 8px',
+            }}>
+              Gym Classes
+            </div>
+            {filteredClasses.map(name => (
+              <div
+                key={name}
+                onClick={() => handleAddClass(name)}
+                style={{
+                  padding: '16px 0',
+                  borderBottom: '1px solid #2a2a2a',
+                  fontFamily: "'Raleway', sans-serif",
+                  fontSize: 20, fontWeight: 700,
+                  textTransform: 'uppercase',
+                  color: '#f0f0f0',
+                  cursor: 'pointer',
+                  letterSpacing: '0.02em',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}
+              >
+                {name}
+                <span style={{
+                  fontSize: 10, fontWeight: 700,
+                  fontFamily: "'Nunito', sans-serif",
+                  color: '#f472b6',
+                  background: 'rgba(244,114,182,0.12)',
+                  border: '1px solid rgba(244,114,182,0.25)',
+                  borderRadius: 100,
+                  padding: '2px 8px',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}>class</span>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );

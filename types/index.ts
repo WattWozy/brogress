@@ -12,6 +12,7 @@ export interface Exercise {
   sets: number;
   reps: number;
   weight: number;
+  type?: 'class';  // reps===0 is the persisted signal; type is a convenience alias
 }
 
 export interface QueuedExercise extends Exercise {
