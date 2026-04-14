@@ -1,21 +1,34 @@
 import type { Exercise } from '@/types';
 
 export const DEFAULT_EXERCISES: Exercise[] = [
-  { id: 'ex_squat',  name: 'Squat',          sets: 4, reps: 5,  weight: 60 },
-  { id: 'ex_bench',  name: 'Bench Press',     sets: 4, reps: 8,  weight: 50 },
-  { id: 'ex_row',    name: 'Barbell Row',     sets: 4, reps: 8,  weight: 50 },
-  { id: 'ex_ohp',    name: 'Overhead Press',  sets: 3, reps: 8,  weight: 35 },
+  { id: 'ex_squat',   name: 'Squat',          sets: 4, reps: 12, weight: 40 },
+  { id: 'ex_thrust',  name: 'Hip Thrust',      sets: 4, reps: 15, weight: 40 },
+  { id: 'ex_rdl',     name: 'Romanian Deadlift', sets: 3, reps: 12, weight: 35 },
+  { id: 'ex_lunge',   name: 'Reverse Lunge',   sets: 3, reps: 12, weight: 20 },
 ];
 
 export const EXERCISE_LIBRARY: string[] = [
-  'Squat', 'Front Squat', 'Leg Press', 'Leg Curl', 'Leg Extension',
-  'Bench Press', 'Incline Bench', 'Decline Bench', 'Dumbbell Fly',
-  'Overhead Press', 'Arnold Press', 'Lateral Raise',
-  'Barbell Row', 'Pendlay Row', 'Cable Row', 'Lat Pulldown', 'Pull-Up', 'Chin-Up',
-  'Deadlift', 'Romanian Deadlift', 'Sumo Deadlift',
-  'Bicep Curl', 'Hammer Curl', 'Preacher Curl',
-  'Tricep Pushdown', 'Skull Crusher', 'Dips',
-  'Calf Raise', 'Hip Thrust', 'Glute Kickback',
-  'Face Pull', 'Upright Row', 'Shrug',
-  'Plank', 'Crunch', 'Leg Raise', 'Ab Wheel',
+  // Glutes
+  'Hip Thrust', 'Barbell Hip Thrust', 'Single-Leg Hip Thrust', 'Glute Bridge',
+  'Cable Kickback', 'Donkey Kick', 'Fire Hydrant', 'Frog Pump',
+  'Resistance Band Squat', 'Sumo Squat', 'Squat Pulse',
+
+  // Legs
+  'Squat', 'Front Squat', 'Goblet Squat', 'Bulgarian Split Squat',
+  'Reverse Lunge', 'Walking Lunge', 'Lateral Lunge', 'Curtsy Lunge',
+  'Leg Press', 'Romanian Deadlift', 'Sumo Deadlift', 'Stiff-Leg Deadlift',
+  'Leg Curl', 'Leg Extension', 'Calf Raise', 'Step-Up',
+
+  // Cardio / HIIT
+  'Treadmill', 'Stairmaster', 'Rowing Machine', 'Cycling',
+  'Jump Rope', 'Box Jump', 'Burpee', 'Jump Squat',
+  'Mountain Climber', 'High Knees', 'Lateral Shuffle',
+
+  // Core
+  'Plank', 'Side Plank', 'Dead Bug', 'Glute-Ham Raise',
+  'Leg Raise', 'Bicycle Crunch', 'Russian Twist', 'Ab Wheel',
+
+  // Upper (light)
+  'Lateral Raise', 'Face Pull', 'Seated Row', 'Lat Pulldown', 'Pull-Up',
+  'Dumbbell Curl', 'Tricep Pushdown',
 ];
