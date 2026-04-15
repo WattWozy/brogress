@@ -51,10 +51,10 @@ export function LoginModal({ onLogin, onRegister }: Props) {
             color: '#f472b6', letterSpacing: 1,
             marginBottom: 4,
           }}>
-            BROGRESS
+            slaytips
           </div>
           <div style={{ color: '#444', fontSize: 11, letterSpacing: '0.04em', marginBottom: 12 }}>
-            No bloat. No distraction. Just brogress.
+            No bloat. No distraction. Just slaytips.
           </div>
 
         </div>
