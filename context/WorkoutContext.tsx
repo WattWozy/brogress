@@ -6,7 +6,11 @@ import React, {
 } from 'react';
 import type { Exercise, Feel, QueuedExercise } from '@/types';
 import { DEFAULT_EXERCISES } from '@/lib/defaults';
-import { saveRoutine, loadRoutine, saveWeight, getDeviceId } from '@/lib/storage';
+import {
+  saveRoutine, loadRoutine, saveWeight, getDeviceId,
+  saveSession, loadSession, clearSession,
+  type SessionSnapshot,
+} from '@/lib/storage';
 import {
   seedAppwrite, loadWeightsFromAppwrite,
   persistWeight, persistRoutine,
@@ -33,12 +37,13 @@ export interface WorkoutState {
 
 // ─── ACTIONS ─────────────────────────────────────────────────────────────────
 export type WorkoutAction =
-  | { type: 'INIT'; routine: Exercise[]; deviceId: string }
+  | { type: 'INIT'; routine: Exercise[]; deviceId: string; snapshot?: SessionSnapshot }
   | { type: 'SET_ROUTINE'; routine: Exercise[] }
   | { type: 'ADVANCE_SET' }
   | { type: 'ADVANCE_EXERCISE' }
   | { type: 'SKIP_EXERCISE' }
   | { type: 'REINJECT_SKIPPED'; idx: number }
+  | { type: 'REINJECT_ALL_SKIPPED' }
   | { type: 'SET_FEEL'; exerciseId: string; feel: Feel }
   | { type: 'ADJUST_WEIGHT'; delta: number }
   | { type: 'SET_WEIGHT'; exId: string; weight: number }
@@ -61,6 +66,22 @@ function totalSetsOf(queue: QueuedExercise[]) {
 function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
   switch (action.type) {
     case 'INIT': {
+      if (action.snapshot) {
+        return {
+          ...state,
+          routine: action.routine,
+          queue: action.snapshot.queue,
+          skipped: action.snapshot.skipped,
+          currentExIdx: action.snapshot.currentExIdx,
+          currentSet: action.snapshot.currentSet,
+          completedSets: action.snapshot.completedSets,
+          totalSets: action.snapshot.totalSets,
+          sessionFeel: action.snapshot.sessionFeel,
+          sessionStarted: false,
+          currentSessionId: action.snapshot.currentSessionId,
+          deviceId: action.deviceId,
+        };
+      }
       const queue = buildQueue(action.routine);
       return {
         ...state,
@@ -110,6 +131,16 @@ function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
         skipped: newSkipped,
         currentExIdx: newIdx,
         currentSet: 1,
+      };
+    }
+
+    case 'REINJECT_ALL_SKIPPED': {
+      const newQueue = [...state.queue, ...state.skipped];
+      return {
+        ...state,
+        queue: newQueue,
+        skipped: [],
+        totalSets: state.totalSets + state.skipped.reduce((s, e) => s + e.sets, 0),
       };
     }
 
@@ -222,21 +253,32 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const deviceId = getDeviceId();
     const stored = loadRoutine();
+    const routine = stored && stored.length > 0 ? stored : DEFAULT_EXERCISES;
 
-    if (stored && stored.length > 0) {
-      dispatch({ type: 'INIT', routine: stored, deviceId });
-      // Background: refresh weights from Appwrite
-      loadWeightsFromAppwrite(deviceId, stored).then(updated => {
-        if (JSON.stringify(updated) !== JSON.stringify(stored)) {
-          dispatch({ type: 'SET_ROUTINE', routine: updated });
-          saveRoutine(updated);
-        }
-      });
-    } else {
-      dispatch({ type: 'INIT', routine: DEFAULT_EXERCISES, deviceId });
+    if (!stored || stored.length === 0) {
       saveRoutine(DEFAULT_EXERCISES);
       seedAppwrite(deviceId);
     }
+
+    // Restore in-progress session if routine hasn't changed since last save
+    const snapshot = loadSession();
+    const routineIds = routine.map(e => e.id).join(',');
+    const canRestore = snapshot !== null && snapshot.routineIds === routineIds;
+
+    dispatch({ type: 'INIT', routine, deviceId, snapshot: canRestore ? snapshot : undefined });
+
+    // Don't re-create the Appwrite session record on first DONE after restore
+    if (canRestore && snapshot!.completedSets > 0) {
+      sessionStartedRef.current = true;
+    }
+
+    // Background: refresh weights from Appwrite
+    loadWeightsFromAppwrite(deviceId, routine).then(updated => {
+      if (JSON.stringify(updated) !== JSON.stringify(routine)) {
+        dispatch({ type: 'SET_ROUTINE', routine: updated });
+        saveRoutine(updated);
+      }
+    });
 
     flushQueue();
   }, []);
@@ -249,6 +291,31 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     state.queue.length > 0 &&
     state.currentExIdx >= state.queue.length &&
     state.skipped.length === 0;
+
+  // ─── SAVE SESSION TO LOCALSTORAGE ──────────────────────────────────
+  useEffect(() => {
+    if (!state.deviceId) return; // not yet initialized
+    saveSession({
+      routineIds: state.routine.map(e => e.id).join(','),
+      queue: state.queue,
+      skipped: state.skipped,
+      currentExIdx: state.currentExIdx,
+      currentSet: state.currentSet,
+      completedSets: state.completedSets,
+      totalSets: state.totalSets,
+      sessionFeel: state.sessionFeel,
+      currentSessionId: state.currentSessionId,
+    });
+  }, [
+    state.queue, state.skipped, state.currentExIdx, state.currentSet,
+    state.completedSets, state.totalSets, state.sessionFeel, state.currentSessionId,
+    state.deviceId, state.routine,
+  ]);
+
+  // Clear saved session when workout completes
+  useEffect(() => {
+    if (isWorkoutComplete) clearSession();
+  }, [isWorkoutComplete]);
 
   // ─── PERSIST SESSION ───────────────────────────────────────────────
   function ensureSessionStarted() {
@@ -359,6 +426,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   const resetSession = useCallback(() => {
     sessionStartedRef.current = false;
+    clearSession();
     dispatch({ type: 'RESET_SESSION' });
   }, []);
 

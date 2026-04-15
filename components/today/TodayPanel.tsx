@@ -56,17 +56,12 @@ export function TodayPanel({ onShowToast }: TodayPanelProps) {
 
     // Advance to next exercise
     const nextIdx = state.currentExIdx + 1;
-    if (nextIdx >= state.queue.length && state.skipped.length === 0) {
-      // workout complete — handled via isWorkoutComplete
-      dispatch({ type: 'ADVANCE_EXERCISE' });
-    } else if (nextIdx >= state.queue.length && state.skipped.length > 0) {
-      // re-inject skipped
-      const newQueue = [...state.queue, ...state.skipped];
-      // Simple: push all skipped back, clear skipped
-      dispatch({ type: 'ADVANCE_EXERCISE' });
-    } else {
-      dispatch({ type: 'ADVANCE_EXERCISE' });
+    if (nextIdx >= state.queue.length && state.skipped.length > 0) {
+      // Append all skipped items back to the queue before advancing so
+      // currentExIdx lands on the first re-injected exercise.
+      dispatch({ type: 'REINJECT_ALL_SKIPPED' });
     }
+    dispatch({ type: 'ADVANCE_EXERCISE' });
   }, [currentEx, dispatch, state.currentExIdx, state.queue.length, state.skipped.length]);
 
   const onReinject = useCallback((idx: number) => {
