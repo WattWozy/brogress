@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
 import { PlanItem } from './PlanItem';
 import { ExerciseSearch } from './ExerciseSearch';
@@ -12,27 +12,9 @@ interface PlanPanelProps {
 }
 
 export function PlanPanel({ onShowToast, planReady }: PlanPanelProps) {
-  const { state, removeExercise, reorderRoutine, activeTemplateName, activeTemplateId, templates } = useWorkout();
+  const { state, removeExercise, reorderRoutine, activeTemplateName } = useWorkout();
   const [searchOpen, setSearchOpen] = useState(false);
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
-  const [openNewOnManager, setOpenNewOnManager] = useState(false);
-
-  // Track the exercise-ID baseline when the active template is loaded/switched.
-  // Changes to weights/sets/reps auto-save to the active template and don't count.
-  // Only composition changes (added, removed, reordered exercises) light up the button.
-  const baselineRef = useRef<string>('');
-  useEffect(() => {
-    const t = templates.find(t => t.id === activeTemplateId);
-    if (t) baselineRef.current = t.exercises.map(e => e.id).join(',');
-  }, [activeTemplateId]);
-
-  const currentIds = state.routine.map(e => e.id).join(',');
-  const hasExerciseChanges = baselineRef.current !== '' && currentIds !== baselineRef.current;
-
-  function openManager(withNew: boolean) {
-    setOpenNewOnManager(withNew);
-    setTemplateManagerOpen(true);
-  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -82,32 +64,13 @@ export function PlanPanel({ onShowToast, planReady }: PlanPanelProps) {
             </>
           ) : null}
         </div>
-        <button
-          onClick={() => openManager(hasExerciseChanges)}
-          style={{
-            background: 'none', border: 'none', padding: 0,
-            cursor: 'pointer',
-            fontFamily: "'DM Mono', monospace",
-            fontSize: 10,
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            color: hasExerciseChanges ? '#f5a623' : '#888',
-            transition: 'color 0.2s',
-            display: 'flex', alignItems: 'center', gap: 5,
-          }}
-        >
-          {hasExerciseChanges ? (
-            <>save as new <span style={{ fontSize: 13, lineHeight: 1 }}>+</span></>
-          ) : (
-            <>← swipe to today</>
-          )}
-        </button>
       </div>
 
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
         {state.routine.map((ex, idx) => (
           <PlanItem
-            key={ex.id}
+            key={`${ex.id}-${idx}`}
             ex={ex}
             idx={idx}
             total={state.routine.length}
@@ -152,8 +115,7 @@ export function PlanPanel({ onShowToast, planReady }: PlanPanelProps) {
       {/* Template manager overlay */}
       <TemplateManager
         visible={templateManagerOpen}
-        openNew={openNewOnManager}
-        onClose={() => { setTemplateManagerOpen(false); setOpenNewOnManager(false); }}
+        onClose={() => setTemplateManagerOpen(false)}
       />
     </div>
   );

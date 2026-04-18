@@ -45,9 +45,9 @@ export function exerciseId(name: string): string {
 // ─── TEMPLATES ───────────────────────────────────────────────────────────────
 
 function docToTemplate(doc: Record<string, unknown>): WorkoutTemplate {
-  const names   = doc.exerciseNames as string[];
-  const sets    = doc.sets    as number[];
-  const reps    = doc.reps    as number[];
+  const names = doc.exerciseNames as string[];
+  const sets = doc.sets as number[];
+  const reps = doc.reps as number[];
   const weights = doc.weights as number[];
   return {
     id: doc.$id as string,
@@ -55,8 +55,8 @@ function docToTemplate(doc: Record<string, unknown>): WorkoutTemplate {
     exercises: names.map((name, i) => ({
       id: exerciseId(name),
       name,
-      sets:   sets[i],
-      reps:   reps[i],
+      sets: sets[i],
+      reps: reps[i],
       weight: weights[i],
     })),
   };
@@ -87,8 +87,8 @@ export async function saveTemplate(
     userId,
     name,
     exerciseNames: exercises.map(e => e.name),
-    sets:    exercises.map(e => e.sets),
-    reps:    exercises.map(e => e.reps),
+    sets: exercises.map(e => e.sets),
+    reps: exercises.map(e => e.reps === 0 ? 1 : e.reps),
     weights: exercises.map(e => e.weight),
   };
   try {
@@ -120,7 +120,7 @@ export async function createSession(userId: string, templateName: string): Promi
   const doc = await getDb().createDocument(AW_DB_ID, COL_SESSIONS, ID.unique(), {
     userId,
     templateName,
-    date:      new Date().toISOString().slice(0, 10),
+    date: new Date().toISOString().slice(0, 10),
     startedAt: new Date().toISOString(),
   });
   return doc.$id;
