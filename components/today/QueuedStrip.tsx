@@ -2,14 +2,11 @@
 
 import { useWorkout } from '@/context/WorkoutContext';
 
-interface QueuedStripProps {
-  onReinject: (idx: number) => void;
-}
-
-export function QueuedStrip({ onReinject }: QueuedStripProps) {
+export function QueuedStrip() {
   const { state } = useWorkout();
 
-  if (state.skipped.length === 0) return <div style={{ minHeight: 28, padding: '0 24px 16px' }} />;
+  const upcoming = state.queue.filter((e, i) => i > state.currentExIdx && !e.done);
+  if (upcoming.length === 0) return <div style={{ minHeight: 28, padding: '0 24px 16px' }} />;
 
   return (
     <div style={{
@@ -17,10 +14,9 @@ export function QueuedStrip({ onReinject }: QueuedStripProps) {
       display: 'flex', gap: 8, flexWrap: 'wrap',
       padding: '0 24px 16px',
     }}>
-      {state.skipped.map((ex, i) => (
+      {upcoming.map((ex, i) => (
         <div
           key={ex.id + i}
-          onClick={() => onReinject(i)}
           style={{
             fontFamily: "'DM Mono', monospace",
             fontSize: 10,
@@ -29,12 +25,11 @@ export function QueuedStrip({ onReinject }: QueuedStripProps) {
             borderRadius: 100,
             padding: '4px 10px',
             letterSpacing: '0.08em',
-            cursor: 'pointer',
             userSelect: 'none',
             whiteSpace: 'nowrap',
           }}
         >
-          ↓ {ex.name} — queued
+          {ex.name}
         </div>
       ))}
     </div>

@@ -53,7 +53,7 @@ export function WorkoutDoneOverlay({ visible }: WorkoutDoneOverlayProps) {
         padding: '0 24px',
       }}>
         {state.completedSets} sets across{' '}
-        {state.queue.length + state.skipped.length} exercises
+        {state.queue.length} exercises
       </div>
 
       {hasGains ? (

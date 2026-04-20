@@ -16,6 +16,7 @@ export interface Exercise {
 
 export interface QueuedExercise extends Exercise {
   originalIdx?: number;
+  done: boolean;
 }
 
 // Compact set record stored in the session document's JSON blob.

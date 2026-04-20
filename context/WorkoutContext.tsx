@@ -21,6 +21,7 @@ interface PersistedProgress {
   date: string;
   sessionId: string;
   sets: StoredSet[];
+  queue?: QueuedExercise[];
   currentExIdx: number;
   currentSet: number;
   completedSets: number;
@@ -96,7 +97,6 @@ function clearStoredProgression() {
 export interface WorkoutState {
   routine: Exercise[];
   queue: QueuedExercise[];
-  skipped: QueuedExercise[];
   currentExIdx: number;
   currentSet: number;
   completedSets: number;
@@ -112,16 +112,15 @@ export type WorkoutAction =
   | { type: 'ADVANCE_SET' }
   | { type: 'ADVANCE_EXERCISE' }
   | { type: 'SKIP_EXERCISE' }
-  | { type: 'REINJECT_SKIPPED'; idx: number }
   | { type: 'SET_FEEL'; exerciseId: string; feel: Feel }
   | { type: 'ADJUST_WEIGHT'; delta: number }
   | { type: 'SET_WEIGHT'; exId: string; weight: number }
   | { type: 'RESET_SESSION' }
   | { type: 'SET_PANEL'; panel: number }
-  | { type: 'RESTORE_PROGRESS'; currentExIdx: number; currentSet: number; completedSets: number };
+  | { type: 'RESTORE_PROGRESS'; queue?: QueuedExercise[]; currentExIdx: number; currentSet: number; completedSets: number };
 
 function buildQueue(routine: Exercise[]): QueuedExercise[] {
-  return routine.map(e => ({ ...e }));
+  return routine.map(e => ({ ...e, done: false }));
 }
 function totalSetsOf(queue: QueuedExercise[]) {
   return queue.reduce((s, e) => s + e.sets, 0);
@@ -136,7 +135,6 @@ function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
         ...state,
         routine: action.routine,
         queue,
-        skipped: [],
         currentExIdx: 0,
         currentSet: 1,
         completedSets: 0,
@@ -146,7 +144,7 @@ function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
     }
 
     case 'SET_ROUTINE': {
-      if (state.completedSets === 0 && state.skipped.length === 0) {
+      if (state.completedSets === 0) {
         const queue = buildQueue(action.routine);
         return { ...state, routine: action.routine, queue, totalSets: totalSetsOf(queue) };
       }
@@ -156,26 +154,25 @@ function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
     case 'ADVANCE_SET':
       return { ...state, currentSet: state.currentSet + 1, completedSets: state.completedSets + 1 };
 
-    case 'ADVANCE_EXERCISE':
-      return { ...state, currentExIdx: state.currentExIdx + 1, currentSet: 1 };
+    case 'ADVANCE_EXERCISE': {
+      const newQueue = state.queue.map((e, i) =>
+        i === state.currentExIdx ? { ...e, done: true } : e
+      );
+      const nextIdx = newQueue.findIndex((e, i) => i > state.currentExIdx && !e.done);
+      return {
+        ...state,
+        queue: newQueue,
+        currentExIdx: nextIdx === -1 ? newQueue.length : nextIdx,
+        currentSet: 1,
+      };
+    }
 
     case 'SKIP_EXERCISE': {
       const ex = state.queue[state.currentExIdx];
-      const newQueue = [...state.queue];
-      newQueue.splice(state.currentExIdx, 1);
-      const newSkipped = [...state.skipped, ex];
-      let newIdx = state.currentExIdx;
-      if (newIdx >= newQueue.length) newIdx = 0;
-      return { ...state, queue: newQueue, skipped: newSkipped, currentExIdx: newIdx, currentSet: 1 };
-    }
-
-    case 'REINJECT_SKIPPED': {
-      const ex = state.skipped[action.idx];
-      const newSkipped = [...state.skipped];
-      newSkipped.splice(action.idx, 1);
-      const newQueue = [...state.queue];
-      newQueue.splice(state.currentExIdx + 1, 0, ex);
-      return { ...state, queue: newQueue, skipped: newSkipped, totalSets: state.totalSets + ex.sets };
+      const newQueue = state.queue.filter((_, i) => i !== state.currentExIdx);
+      newQueue.push(ex);
+      const nextIdx = state.currentExIdx < newQueue.length ? state.currentExIdx : 0;
+      return { ...state, queue: newQueue, currentExIdx: nextIdx, currentSet: 1 };
     }
 
     case 'SET_FEEL':
@@ -201,7 +198,6 @@ function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
       return {
         ...state,
         queue,
-        skipped: [],
         currentExIdx: 0,
         currentSet: 1,
         completedSets: 0,
@@ -216,6 +212,7 @@ function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
     case 'RESTORE_PROGRESS':
       return {
         ...state,
+        ...(action.queue ? { queue: action.queue } : {}),
         currentExIdx: action.currentExIdx,
         currentSet: action.currentSet,
         completedSets: action.completedSets,
@@ -228,7 +225,6 @@ function reducer(state: WorkoutState, action: WorkoutAction): WorkoutState {
 const initialState: WorkoutState = {
   routine: [],
   queue: [],
-  skipped: [],
   currentExIdx: 0,
   currentSet: 1,
   completedSets: 0,
@@ -343,6 +339,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
           sessionSetsRef.current = progress.sets;
           dispatch({
             type: 'RESTORE_PROGRESS',
+            queue: progress.queue,
             currentExIdx: progress.currentExIdx,
             currentSet: progress.currentSet,
             completedSets: progress.completedSets,
@@ -365,8 +362,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const isLastSetOfExercise = currentEx ? state.currentSet >= currentEx.sets : false;
   const isWorkoutComplete =
     state.queue.length > 0 &&
-    state.currentExIdx >= state.queue.length &&
-    state.skipped.length === 0;
+    state.queue.every(e => e.done);
 
   // ─── SESSION HELPERS ───────────────────────────────────────────────
   // Returns the session $id, creating it in Appwrite on first call.
@@ -423,12 +419,13 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       date: new Date().toISOString().slice(0, 10),
       sessionId,
       sets: sessionSetsRef.current,
+      queue: state.queue,
       currentExIdx: state.currentExIdx,
       currentSet: state.currentSet,
       completedSets: state.completedSets,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, state.currentExIdx, state.currentSet, state.completedSets]);
+  }, [sessionId, state.queue, state.currentExIdx, state.currentSet, state.completedSets]);
 
   // ─── HANDLE DONE ───────────────────────────────────────────────────
   const handleDone = useCallback(() => {
