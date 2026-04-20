@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import type { HistoryDate } from '@/types';
 
 interface CalendarStripProps {
@@ -13,9 +14,16 @@ const DAY_NAMES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 export function CalendarStrip({ historyDates, selectedDate, onSelectDate }: CalendarStripProps) {
   const sessionDates = new Set(historyDates.map(h => h.date));
   const days: { date: string; dayName: string; dayNum: number; hasSession: boolean }[] = [];
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (stripRef.current) {
+      stripRef.current.scrollLeft = stripRef.current.scrollWidth;
+    }
+  }, []);
 
   const today = new Date();
-  for (let i = 0; i < 30; i++) {
+  for (let i = 29; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10);
@@ -28,7 +36,7 @@ export function CalendarStrip({ historyDates, selectedDate, onSelectDate }: Cale
   }
 
   return (
-    <div style={{
+    <div ref={stripRef} style={{
       padding: '12px 24px',
       display: 'flex', gap: 8,
       overflowX: 'auto',
