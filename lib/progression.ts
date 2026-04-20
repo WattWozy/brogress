@@ -5,7 +5,7 @@ export interface ProgressionSuggestion {
   currentWeight: number;
   suggestedWeight: number;
   ready: boolean;
-  reason: 'weight_increase' | 'not_enough_sets' | 'feel_hard';
+  reason: 'weight_increase' | 'not_enough_sets' | 'feel_not_easy';
 }
 
 const INCREMENT_KG = 2.5;
@@ -17,7 +17,7 @@ const INCREMENT_KG = 2.5;
  * Rules (all must pass):
  *  1. Weight > 0          — skip bodyweight exercises
  *  2. All planned sets completed
- *  3. Majority feel ≠ 'hard'  (blank feel treated as 'right')
+ *  3. Majority feel === 'easy'  (blank/'right'/'hard' all block gains)
  *
  * → Suggest +2.5 kg. Everything else returns ready: false with a reason.
  */
@@ -48,15 +48,15 @@ export function computeProgressionSuggestions(
       continue;
     }
 
-    // Majority feel check — '' treated as 'right'
-    const hardCount = exSets.filter(s => s.feel === 'hard').length;
-    if (hardCount > exSets.length / 2) {
+    // Gains only if majority feel === 'easy' — 'right', 'hard', and blank all block
+    const easyCount = exSets.filter(s => s.feel === 'easy').length;
+    if (easyCount <= exSets.length / 2) {
       suggestions.push({
         exerciseName: ex.name,
         currentWeight: ex.weight,
         suggestedWeight: ex.weight,
         ready: false,
-        reason: 'feel_hard',
+        reason: 'feel_not_easy',
       });
       continue;
     }
