@@ -122,6 +122,7 @@ export async function createSession(userId: string, templateName: string): Promi
     templateName,
     date: new Date().toISOString().slice(0, 10),
     startedAt: new Date().toISOString(),
+    cyclePhase: null,
   });
   return doc.$id;
 }
